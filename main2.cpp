@@ -21,8 +21,6 @@ File        *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr;
 
 int main()
 {
-    // Following code shows how to you File and Page classes
-    
     const std::string &filename = "test.db";
     // Clean up from any previous runs that crashed.
 
