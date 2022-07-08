@@ -6,7 +6,6 @@
 
 #include "pages/page.h"
 #include "pages/File.h"
-#include "buffer.h"
 
 #define PRINT_ERROR(str)  std::cerr << "On Line No:" << __LINE__ << "\n"; std::cerr << str << "\n"; exit(1);                                        
 
@@ -17,7 +16,7 @@ PageId      pid[num], pageno1, pageno2, pageno3, i;
 RecordId    rid[num], rid2, rid3;
 Page        *page, *page2, *page3;
 char        tmpbuf[100];
-BufMgr      *bufMgr;
+// BufMgr      *bufMgr;
 File        *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr;
 
 
