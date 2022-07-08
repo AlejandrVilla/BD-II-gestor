@@ -5,7 +5,6 @@
 #include <memory>
 
 #include "../types.h"
-// #include "File_Iterator.h"
 
 namespace siprec
 {
@@ -233,8 +232,8 @@ namespace siprec
             if (header.first_used_page == Page::INVALID_NUMBER ||
                 header.first_used_page > new_page.page_number())
             {
-                // Either have no pages used or the head of the used list is a page later
-                // than the one we just allocated, so add the new page to the head.
+                // O no tiene páginas usadas o el encabezado de la lista usada es una página posterior
+                // que el que acabamos de asignar, así que se agrega la nueva página al encabezado.
                 if (header.first_used_page > new_page.page_number())
                 {
                     new_page.set_next_page_number(header.first_used_page);
@@ -243,8 +242,8 @@ namespace siprec
             }
             else
             {
-                // New page is reused from somewhere after the beginning, so we need to
-                // find where in the used list to insert it.
+                 // La nueva página se reutiliza desde algún lugar después del principio, por lo que debemos
+                // encontrar en qué parte de la lista de usados esta para ​​insertarlo.
                 PageId next_page_number = Page::INVALID_NUMBER;
                 for (FileIterator iter = begin(); iter != end(); ++iter)
                 {
@@ -316,9 +315,9 @@ namespace siprec
         stream_->read(reinterpret_cast<char *>(&page.data_[0]), Page::DATA_SIZE);
         if (!allow_free && !page.isUsed())
         {
-            std::cerr<< "Request made for an invalid page."
-            << " Requested page " << page_number
-            << " from file '" << filename_ << "'";
+            std::cerr<< "Peticion dirigida a pagina invalida"
+            << " Pagina: " << page_number
+            << " File:'" << filename_ << "'";
             return page;
         }
         return page;
@@ -344,15 +343,15 @@ namespace siprec
         FileHeader header = readHeader();
         Page existing_page = readPage(page_number);
         Page previous_page;
-        // If this page is the head of the used list, update the header to point to
-        // the next page in line.
+        // Si esta página es el encabezado de la lista usada, actualice el encabezado para que apunte a
+        // la página siguiente en la línea.
         if (page_number == header.first_used_page)
         {
             header.first_used_page = existing_page.next_page_number();
         }
         else
         {
-            // Walk the used list so we can update the page that points to this one.
+            // Recorre la lista de usados ​​para que podamos actualizar la página que apunta a esta.
             for (FileIterator iter = begin(); iter != end(); ++iter)
             {
                 previous_page = *iter;
@@ -363,7 +362,7 @@ namespace siprec
                 }
             }
         }
-        // Clear the page and add it to the head of the free list.
+        // Limpia la página y la agrega al encabezado de la lista libre.
         existing_page.initialize();
         existing_page.set_next_page_number(header.first_free_page);
         header.first_free_page = page_number;
@@ -393,7 +392,7 @@ namespace siprec
 
         if (create_new)
         {
-            // File starts with 1 page (the header).
+           // El archivo comienza con 1 página (el encabezado).
             FileHeader header = {1 /* num_pages */, 0 /* first_used_page */,
                                  0 /* num_free_pages */, 0 /* first_free_page */};
             writeHeader(header);
@@ -403,7 +402,7 @@ namespace siprec
     void File::openIfNeeded(const bool create_new)
     {
         if (open_counts_.find(filename_) != open_counts_.end())
-        { // exists an entry already
+        { // ya existe una entrada
             ++open_counts_[filename_];
             stream_ = open_streams_[filename_];
         }
@@ -414,18 +413,18 @@ namespace siprec
             const bool already_exists = exists(filename_);
             if (create_new)
             {
-                // Error if we try to overwrite an existing file.
+                // Error si intentamos sobrescribir un archivo existente.
                 if (already_exists)
                 {
                     std::cerr << "El file ya existe.\n";
                     std::cerr << "File: " << filename_ << "\n";
                 }
-                // New files have to be truncated on open.
+                // Los archivos nuevos deben truncarse 
                 mode = mode | std::fstream::trunc;
             }
             else
             {
-                // Error if we try to open a file that doesn't exist.
+               // Error si intentamos abrir un archivo que no existe.
                 if (!already_exists)
                 {
                     std::cerr << "El file no ha sido encontrado.\n";
