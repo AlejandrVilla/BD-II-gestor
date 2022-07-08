@@ -34,68 +34,68 @@ void testBufMgr();
 
 int main()
 {
-    // Following code shows how to you File and Page classes
+    // El siguiente codigo muestra como usar las clases de archivo y pagina
 
     const std::string &filename = "test.db";
-    // Clean up from any previous runs that crashed.
+    // Limpiar cualquier ejecucion anterior que falle.
 
     File::remove(filename);
 
     {
-        // Create a new database file.
+        // Crear un nuevo archivo de base de datos.
         File new_file = File::create(filename);
 
-        // Allocate some pages and put data on them.
+        // Asignar algunas paginas y poner datos en ellas.
         PageId third_page_number;
         for (int i = 0; i < 5; ++i)
         {
             Page new_page = new_file.allocatePage();
             if (i == 3)
             {
-                // Keep track of the identifier for the third page so we can read it
-                // later.
+                // Mantenga un registro del identificador de la tercera pagina para que podamos leerlo
+                // luego.
                 third_page_number = new_page.page_number();
             }
             new_page.insertRecord("hello!");
-            // Write the page back to the file (with the new data).
+            // Vuelve a escribir la pagina en el archivo (con los nuevos datos).
             new_file.writePage(new_page);
         }
 
-        // Iterate through all pages in the file.
+        // Iterar a traves de todas las paginas del archivo.
         for (FileIterator iter = new_file.begin() ; iter != new_file.end() ; ++iter)
         {
-            //Page it = *iter;
-            // Iterate through all records on the page.
+           //Page it = *iter;
+           // Iterar a traves de todos los registros en la pagina.
             for (PageIterator page_iter = (*iter).begin() ; page_iter != (*iter).end() ; ++page_iter)
             {
-                std::cout << "Found record: " << *page_iter << " on page " << (*iter).page_number() << "\n";
+                std::cout << "Registro encontrado: " << *page_iter << " en la pagina " << (*iter).page_number() << "\n";
             }
         }
 
-        // Retrieve the third page and add another record to it.
+        // Recuperar la tercera pagina y agregarle otro registro.
         Page third_page = new_file.readPage(third_page_number);
         const RecordId &rid = third_page.insertRecord("world!");
         new_file.writePage(third_page);
 
-        // Retrieve the record we just added to the third page.
-        std::cout << "Third page has a new record: "
+        // Recuperar el registro que acabamos de agregar a la tercera pagina.
+        std::cout << "La tercera pagina tiene un nuevo registro: "
                   << third_page.getRecord(rid) << "\n\n";
     }
-    // new_file goes out of scope here, so file is automatically closed.
+    // new_file queda fuera del alcance aqui, por lo que el archivo se cierra automaticamente.
 
-    // Delete the file since we're done with it.
+     // Borra el archivo ya que hemos terminado con el.
     File::remove(filename);
 
-    // This function tests buffer manager, comment this line if you don't wish to test buffer manager
+    // Esta funcion prueba el administrador de bufer, comente esta linea si no desea probar el administrador de bufer
     testBufMgr();
 }
 
 void testBufMgr()
 {
-    // create buffer manager
+    // crear administrador de bufer
     bufMgr = new BufMgr(num);
 
-    // create dummy files
+    // crear archivos ficticios
     const std::string &filename1 = "test.1";
     const std::string &filename2 = "test.2";
     const std::string &filename3 = "test.3";
@@ -121,8 +121,8 @@ void testBufMgr()
     file5ptr = &file5;
 
     // Test buffer manager
-    // Comment tests which you do not wish to run now. Tests are dependent on their preceding tests. So, they have to be run in the following order.
-    // Commenting  a particular test requires commenting all tests that follow it else those tests would fail.
+    // Comenta las pruebas que no deseas ejecutar ahora. Las pruebas dependen de sus pruebas anteriores. Por lo tanto, deben ejecutarse en el siguiente orden.
+    // Comentar una prueba en particular requiere comentar todas las pruebas que le siguen, de lo contrario esas pruebas fallarian.
     test1();
     test2();
     test3();
@@ -132,8 +132,8 @@ void testBufMgr()
     test7();
     test_unPinPage();
 
-    // Close files before deleting them
-    // printf("~file\n");
+    // Cerrar archivos antes de borrarlos
+    // printf("~archivo\n");
     file1.~File();
     // printf("~file1\n");
     file2.~File();
@@ -147,17 +147,17 @@ void testBufMgr()
     File::remove(filename3);
     File::remove(filename4);
     File::remove(filename5);
-    printf("starting delete bufmgr\n");
+    printf("comenzando eliminar bufmgr\n");
     delete bufMgr;
 
     std::cout << "\n"
-              << "Passed all tests."
+              << "Paso todas las pruebas."
               << "\n";
 }
 
 void test1()
 {
-    // Allocating pages in a file...
+    // Asignando paginas en un archivo...
     for (i = 0; i < num; i++)
     {
         bufMgr->allocPage(file1ptr, pid[i], page);
@@ -167,7 +167,7 @@ void test1()
         // printf("index %i \n", i);
     }
 
-    // Reading pages back...
+    // Leyendo pages back...
     for (i = 0; i < num; i++)
     {
         // printf("start reading page, index %i\n", i);
@@ -187,23 +187,23 @@ void test1()
 
 void test2()
 {
-    // Writing and reading back multiple files
-    // The page number and the value should match
+   // Escribir y leer varios archivos
+   // El numero de pagina y el valor deben coincidir
 
     for (i = 0; i < num / 3; i++)
     {
-        // printf("in test 2, waiting for allocPage %i times\n", i);
+        // printf("en la prueba 2, esperando allocPage %i veces\n", i);
         bufMgr->allocPage(file2ptr, pageno2, page2);
         sprintf((char *)tmpbuf, "test.2 Page %d %7.1f", pageno2, (float)pageno2);
         rid2 = page2->insertRecord(tmpbuf);
-        // printf("passed thru allocPage %i times\n", i);
+        // printf("pasando atraves de allocPage %i veces\n", i);
         int index = rand() % num;
         pageno1 = pid[index];
         bufMgr->readPage(file1ptr, pageno1, page);
         sprintf((char *)tmpbuf, "test.1 Page %d %7.1f", pageno1, (float)pageno1);
         if (strncmp(page->getRecord(rid[index]).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
         {
-            PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+            PRINT_ERROR("ERROR :: LOS CONTENIDOS NO COINCIDIERON");
         }
 
         bufMgr->allocPage(file3ptr, pageno3, page3);
@@ -214,14 +214,14 @@ void test2()
         sprintf((char *)&tmpbuf, "test.2 Page %d %7.1f", pageno2, (float)pageno2);
         if (strncmp(page2->getRecord(rid2).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
         {
-            PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+            PRINT_ERROR("ERROR :: LOS CONTENIDOS NO COINCIDIERON");
         }
 
         bufMgr->readPage(file3ptr, pageno3, page3);
         sprintf((char *)&tmpbuf, "test.3 Page %d %7.1f", pageno3, (float)pageno3);
         if (strncmp(page3->getRecord(rid3).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
         {
-            PRINT_ERROR("ERROR :: CONTENTS DID NOT MATCH");
+            PRINT_ERROR("ERROR :: LOS CONTENIDOS NO COINCIDIERON");
         }
 
         bufMgr->unPinPage(file1ptr, pageno1, false);
@@ -243,7 +243,7 @@ void test3()
 {
 
     bufMgr->readPage(file4ptr, 1, page);
-    PRINT_ERROR("ERROR :: File4 should not exist. Exception should have been thrown before execution reaches this point.");
+    PRINT_ERROR("ERROR :: File4 no deberia existir. Se deberia haber lanzado una excepcion antes de que la ejecucion llegue a este punto.");
 
     std::cout << "Test 3 passed"
               << "\n";
@@ -256,9 +256,9 @@ void test4()
 
     // printf("unpin try pageId: %i\n", i);
     bufMgr->unPinPage(file4ptr, i, false);
-    PRINT_ERROR("ERROR :: Page is already unpinned. Exception should have been thrown before execution reaches this point.");
+    PRINT_ERROR("ERROR :: La pagina ya no esta fijada. Se deberia haber lanzado una excepcion antes de que la ejecucion llegue a este punto.");
 
-    printf("catch the exception in test 4, hoorrray\n");
+    printf("catch the exception in test 4\n");
 
     std::cout << "Test 4 passed"
               << "\n";
@@ -276,7 +276,7 @@ void test5()
     PageId tmp;
 
     bufMgr->allocPage(file5ptr, tmp, page);
-    PRINT_ERROR("ERROR :: No more frames left for allocation. Exception should have been thrown before execution reaches this point.");
+    PRINT_ERROR("ERROR :: No quedan mas marcos para la asignacion. Se deberia haber lanzado una excepcion antes de que la ejecucion llegue a este punto.");
 
     std::cout << "Test 5 passed"
               << "\n";
@@ -287,13 +287,13 @@ void test5()
 
 void test6()
 {
-    // flushing file with pages still pinned. Should generate an error
+    // vaciando el archivo con paginas aun ancladas. Deberia generar un error
     for (i = 1; i <= num; i++)
     {
         bufMgr->readPage(file1ptr, i, page);
     }
     bufMgr->flushFile(file1ptr);
-    PRINT_ERROR("ERROR :: Pages pinned for file being flushed. Exception should have been thrown before execution reaches this point.");
+    PRINT_ERROR("ERROR :: Paginas ancladas para el archivo que se esta vaciando. Se deberia haber lanzado una excepcion antes de que la ejecucion llegue a este punto.");
 
     std::cout << "Test 6 passed"
               << "\n";
@@ -307,28 +307,28 @@ void test6()
 void test7()
 {
     bufMgr->allocPage(file1ptr, pageno1, page);
-    // disposePage should throw PagePinnedException if page is still pinned.
+    // disposePage debe lanzar PagePinnedException si la pagina aun esta anclada.
 
     bufMgr->disposePage(file1ptr, pageno1);
-    PRINT_ERROR("ERROR :: Pages pinned for file being disposed. Exception should have been thrown before execution reaches this point.");
+    PRINT_ERROR("ERROR :: Paginas ancladas para que el archivo se elimine. Se deberia haber lanzado una excepcion antes de que la ejecucion llegue a este punto.");
 
-    // disposePage should not throw exceptions even though no longer in buffer
+    // disposePage no debe lanzar excepciones aunque ya no este en el bufer
     bufMgr->unPinPage(file1ptr, pageno1, false);
     for (i = 0; i < num; ++i)
     {
-        bufMgr->allocPage(file2ptr, pid[i], page); // Evict file1's frame
+        bufMgr->allocPage(file2ptr, pid[i], page); // Desalojar file1's frame
     }
 
     bufMgr->disposePage(file1ptr, pageno1);
 
-    PRINT_ERROR("ERROR :: Page is unpinned. disposePage should not throw any exceptions.");
+    PRINT_ERROR("ERROR :: La pagina no esta fijada. disposePage no debe generar ninguna excepcion.");
 
-    // Second disposePage should throw InvalidPageException.
+    // La segunda disposePage deberia lanzar InvalidPageException.
 
     bufMgr->disposePage(file1ptr, pageno1);
-    PRINT_ERROR("ERROR :: disposePage should throw InvalidPageException when page is already disposed.");
+    PRINT_ERROR("ERROR :: disposePage debe lanzar InvalidPageException cuando la pagina ya se elimino.");
 
-    printf("InvalidPageException here. No worries, catching it here=P\n");
+    printf("Excepcion de pagina no valida aqui. No te preocupes, atrapandolo aqui =P\n");
 
     for (i = 0; i < num; ++i)
     {
@@ -341,31 +341,31 @@ void test7()
 
 void test_unPinPage()
 {
-    // Test conditions:  File 1 exists, and has at least one page.
-    // After test conditions: File 1 will be flushed from buffer.
+    // Condiciones de prueba: el archivo 1 existe y tiene al menos una pagina.
+    // Despues de las condiciones de la prueba: el archivo 1 se vaciara del bufer.
     PageId firstPageID = 1;
     const bool notDirty = 0;
     const bool isDirty = 1;
     Page *testPage;
 
-    // Flush all file 1 to get rid of test page
+    // Vaciar todo el archivo 1 para deshacerse de la pagina de prueba
     bufMgr->flushFile(file1ptr);
 
-    // Test nothing happens if page not in buffer
+    // Probar que no pasa nada si la pagina no esta en el bufer
 
     bufMgr->unPinPage(file1ptr, firstPageID, notDirty);
 
-    PRINT_ERROR("ERROR :: Page is not in buffer. unPinPage should not throw any exceptions.");
+    PRINT_ERROR("ERROR :: La pagina no esta en el bufer. unPinPage no debe generar ninguna excepcion.");
 
-    // Test unPinPage on unpinned page results in PageNotPinned exception
-    //      also implicitly tests successful unPinPage if readPage is working
+    // Probar unPinPage en resultados de pagina no anclados en la excepcion PageNotPinned
+    // tambien prueba implicitamente unPinPage exitoso si readPage esta funcionando
     bufMgr->readPage(file1ptr, firstPageID, testPage);
     bufMgr->unPinPage(file1ptr, firstPageID, notDirty);
 
     bufMgr->unPinPage(file1ptr, firstPageID, notDirty);
-    PRINT_ERROR("ERROR :: Page is already unpinned. unPinPage should PageNotPinnedException.");
+    PRINT_ERROR("ERROR :: La pagina ya no esta fijada. unPinPage deberia PageNotPinnedException.");
 
-    // Test unPinPage sets dirty bit to true
+    // Probar unPinPage establece el bit sucio en verdadero
     bufMgr->readPage(file1ptr, firstPageID, testPage);
     sprintf((char *)tmpbuf, "Testing unPinPage");
     const RecordId &rid = testPage->insertRecord(tmpbuf);
@@ -375,15 +375,15 @@ void test_unPinPage()
     bufMgr->readPage(file1ptr, firstPageID, testPage);
     if (strncmp(testPage->getRecord(rid).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
     {
-        PRINT_ERROR("ERROR :: UnPinPage did not set dirty bit correctly");
+        PRINT_ERROR("ERROR :: UnPinPage no configuro el dirty bit correctamente");
     }
     testPage->deleteRecord(rid);
     bufMgr->unPinPage(file1ptr, firstPageID, notDirty);
 
-    // Test unPinPage does not set dirty bit to false
+    // Prueba unPinPage no establece el bit sucio en falso
     bufMgr->readPage(file1ptr, firstPageID, testPage);
     sprintf((char *)tmpbuf, "Testing unPinPage");
-    const RecordId &rid2 = testPage->insertRecord(tmpbuf); // rid2 == rid since we're the only users?
+    const RecordId &rid2 = testPage->insertRecord(tmpbuf); // rid2 == rid ya que somos los unicos usuarios?
     bufMgr->unPinPage(file1ptr, firstPageID, isDirty);
     bufMgr->readPage(file1ptr, firstPageID, testPage);
     bufMgr->unPinPage(file1ptr, firstPageID, notDirty);
@@ -392,12 +392,12 @@ void test_unPinPage()
     bufMgr->readPage(file1ptr, firstPageID, testPage);
     if (strncmp(testPage->getRecord(rid2).c_str(), tmpbuf, strlen(tmpbuf)) != 0)
     {
-        PRINT_ERROR("ERROR :: UnPinPage did not set dirty bit correctly");
+        PRINT_ERROR("ERROR :: UnPinPage no configuro el dirty bit correctamente");
     }
     testPage->deleteRecord(rid2);
     bufMgr->unPinPage(file1ptr, firstPageID, notDirty);
 
-    // Flush file to attain guaranteed post test state.
+    // Limpiar el archivo para alcanzar el estado de prueba posterior garantizado.
     bufMgr->flushFile(file1ptr);
 
     std::cout << "Test for unPinPage passed\n";
