@@ -6,7 +6,7 @@
 
 #include "../types.h"
 
-namespace siprec
+namespace DB
 {
     class FileIterator;
     struct FileHeader
