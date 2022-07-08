@@ -42,7 +42,7 @@ public:
 int BufHashTbl::hash(const File *file, const PageId pageNo)
 {
     int tmp, value;
-    tmp = (long long)file; // cast of pointer to the file object to an integer
+    tmp = (long long)file; // conversión del puntero al objeto archivo en un entero
     value = (tmp + pageNo) % HTSIZE;
     return value;
 }
@@ -50,7 +50,7 @@ int BufHashTbl::hash(const File *file, const PageId pageNo)
 BufHashTbl::BufHashTbl(int htSize)
     : HTSIZE(htSize)
 {
-    // allocate an array of pointers to hashBuckets
+    // asignar un arreglo de punteros a los hashBuckets
     ht = new hashBucket *[htSize];
     for (int i = 0; i < HTSIZE; i++)
         ht[i] = NULL;
@@ -80,7 +80,7 @@ void BufHashTbl::insert(const File *file, const PageId pageNo, const FrameId fra
     {
         if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)
         {
-            std::cerr<<"Entry corresponding to the hash value of file:" << tmpBuc->file->filename() << "page:" << tmpBuc->pageNo << "is already present in the hash table.";           
+            std::cerr<<"Entrada correspondiente al valor hash del archivo:" << tmpBuc->file->filename() << "page:" << tmpBuc->pageNo << "ya está presente en la tabla hash.";           
             return;
         }
         tmpBuc = tmpBuc->next;
@@ -89,7 +89,7 @@ void BufHashTbl::insert(const File *file, const PageId pageNo, const FrameId fra
     tmpBuc = new hashBucket;
     if (!tmpBuc)
     {
-        std::cerr<< "Error occurred in buffer hash table.";
+        std::cerr<< "Se ha producido un error en la tabla hash del buffer.";
         return;
     }
 
@@ -108,12 +108,12 @@ void BufHashTbl::lookup(const File *file, const PageId pageNo, FrameId &frameNo)
     {
         if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)
         {
-            frameNo = tmpBuc->frameNo; // return frameNo by reference
+            frameNo = tmpBuc->frameNo; // retorna frameNo por referencia
             return;
         }
         tmpBuc = tmpBuc->next;
     }
-    std::cerr<< "The hash value is not present in the hash table for file: " << file->filename() << "page: " << pageNo;
+    std::cerr<< "El valor hash no está presente en la tabla hash del archivo: " << file->filename() << "page: " << pageNo;
 }
 
 void BufHashTbl::remove(const File *file, const PageId pageNo)
@@ -141,6 +141,6 @@ void BufHashTbl::remove(const File *file, const PageId pageNo)
             tmpBuc = tmpBuc->next;
         }
     }
-    std::cerr<< "The hash value is not present in the hash table for file: " << file->filename() << "page: " << pageNo;
+    std::cerr<< "El valor hash no está presente en la tabla hash del archivo: " << file->filename() << "page: " << pageNo;
 }
 }
