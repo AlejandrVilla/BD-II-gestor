@@ -154,7 +154,7 @@ BufMgr::BufMgr(std::uint32_t bufs)
 
 BufMgr::~BufMgr()
 {
-
+    std::cout<<"limpiando buffer\n";
     for (uint32_t i = 0; i < numBufs; i++)
     {
         BufDesc buf = bufDescTable[i];
