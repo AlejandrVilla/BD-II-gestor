@@ -65,7 +65,7 @@ int main()
         for (FileIterator iter = new_file.begin() ; iter != new_file.end() ; ++iter)
         {
            //Page it = *iter;
-            // Iterar a traves de todos los registros en la pagina.
+           // Iterar a traves de todos los registros en la pagina.
             for (PageIterator page_iter = (*iter).begin() ; page_iter != (*iter).end() ; ++page_iter)
             {
                 std::cout << "Registro encontrado: " << *page_iter << " en la pagina " << (*iter).page_number() << "\n";
@@ -188,7 +188,7 @@ void test1()
 void test2()
 {
    // Escribir y leer varios archivos
-    // El numero de pagina y el valor deben coincidir
+   // El numero de pagina y el valor deben coincidir
 
     for (i = 0; i < num / 3; i++)
     {
