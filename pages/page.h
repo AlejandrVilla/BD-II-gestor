@@ -226,9 +226,10 @@ namespace DB
 
     std::string Page::getRecord(const RecordId &record_id) const // devuelve un registro
     {
-        validateRecordId(record_id);                             // valida que el num de pagina sea correcto y el slot este en uso
+        // validateRecordId(record_id);                             // valida que el num de pagina sea correcto y el slot este en uso
         const PageSlot &slot = getSlot(record_id.slot_number);   // recupera el slot
-        return data_.substr(slot.item_offset, slot.item_length); // obtiene el registro
+        return data_;
+        // return data_.substr(slot.item_offset, slot.item_length); // obtiene el registro
     }
 
     void Page::updateRecord(const RecordId &record_id, const std::string &record_data)

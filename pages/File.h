@@ -440,6 +440,7 @@ namespace DB
 
     void File::close()
     {
+        // std::cout<<"cerrando..\n";
         --open_counts_[filename_];
         stream_.reset();
         if (open_counts_[filename_] == 0)

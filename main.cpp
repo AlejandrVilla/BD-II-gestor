@@ -19,59 +19,59 @@ char        tmpbuf[100];
 // BufMgr      *bufMgr;
 File        *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr;
 
+
 int main()
 {
-    // Following code shows how to you File and Page classes
-    
-    const std::string &filename = "test.db";
-    // Clean up from any previous runs that crashed.
+    // El siguiente codigo muestra como usar las clases de archivo y pagina
+
+    const std::string &filename = "test.txt";
+    // Limpiar cualquier ejecucion anterior que falle.
 
     File::remove(filename);
 
     {
-        // Create a new database file.
+        // Crear un nuevo archivo de base de datos.
         File new_file = File::create(filename);
 
-        // Allocate some pages and put data on them.
+        // Asignar algunas paginas y poner datos en ellas.
         PageId third_page_number;
         for (int i = 0; i < 5; ++i)
         {
             Page new_page = new_file.allocatePage();
             if (i == 3)
             {
-                // Keep track of the identifier for the third page so we can read it
-                // later.
+                // Mantenga un registro del identificador de la tercera pagina para que podamos leerlo
+                // luego.
                 third_page_number = new_page.page_number();
             }
             new_page.insertRecord("hello!");
-            // Write the page back to the file (with the new data).
+            // Vuelve a escribir la pagina en el archivo (con los nuevos datos).
             new_file.writePage(new_page);
         }
-        
 
-        // Iterate through all pages in the file.
+        // Iterar a traves de todas las paginas del archivo.
         for (FileIterator iter = new_file.begin() ; iter != new_file.end() ; ++iter)
         {
-            //Page it = *iter;
-            // Iterate through all records on the page.
+           //Page it = *iter;
+           // Iterar a traves de todos los registros en la pagina.
             for (PageIterator page_iter = (*iter).begin() ; page_iter != (*iter).end() ; ++page_iter)
-            {   
-                // indireccion verifica que el slot no este en uso
-                std::cout << "Found record: " << *page_iter << " on page " << (*iter).page_number() << "\n";
+            {
+                std::cout << "Registro encontrado: " << *page_iter << " en la pagina " << (*iter).page_number() << "\n";
             }
         }
 
-        // Retrieve the third page and add another record to it.
+        // Recuperar la tercera pagina y agregarle otro registro.
         Page third_page = new_file.readPage(third_page_number);
         const RecordId &rid = third_page.insertRecord("world!");
         new_file.writePage(third_page);
 
-        // Retrieve the record we just added to the third page.
-        std::cout << "Third page has a new record: "
+        // Recuperar el registro que acabamos de agregar a la tercera pagina.
+        std::cout << "La tercera pagina tiene un nuevo registro: "
                   << third_page.getRecord(rid) << "\n\n";
     }
-    // new_file goes out of scope here, so file is automatically closed.
+    // new_file queda fuera del alcance aqui, por lo que el archivo se cierra automaticamente.
 
-    // Delete the file since we're done with it.
+     // Borra el archivo ya que hemos terminado con el.
     File::remove(filename);
+
 }
