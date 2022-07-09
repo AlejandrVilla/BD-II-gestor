@@ -47,6 +47,9 @@ int main()
 
         (*File_iter).deleteRecord(rid);
         std::cout<<*Page_iter<<'\n';
+
+        std::cout<<(*File_iter).page_number()<<'\n';
+        std::cout<<(*File_iter).getFreeSpace()<<'\n';
     }
     File::remove(filename);
 
