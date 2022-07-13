@@ -6,7 +6,7 @@
 #include "buffer.h"
 #include "bufHashTbl.h"
 
-namespace siprec{
+namespace DB{
 struct hashBucket
 {
     File *file;

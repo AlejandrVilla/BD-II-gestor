@@ -2,7 +2,7 @@
 
 #include "pages/File.h"
 #include "bufHashTbl.h"
-namespace siprec{
+namespace DB{
 class BufMgr;
 
 class BufDesc
