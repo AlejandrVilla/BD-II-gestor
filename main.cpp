@@ -24,7 +24,7 @@ int main()
 {
     // El siguiente codigo muestra como usar las clases de archivo y pagina
 
-    const std::string &filename = "test.db";
+    const std::string &filename = "test.txt";
     // Limpiar cualquier ejecucion anterior que falle.
 
     File::remove(filename);
@@ -34,44 +34,23 @@ int main()
         File new_file = File::create(filename);
 
         // Asignar algunas paginas y poner datos en ellas.
-        PageId third_page_number;
-        for (int i = 0; i < 5; ++i)
-        {
-            Page new_page = new_file.allocatePage();
-            if (i == 3)
-            {
-                // Mantenga un registro del identificador de la tercera pagina para que podamos leerlo
-                // luego.
-                third_page_number = new_page.page_number();
-            }
-            new_page.insertRecord("hello!");
-            // Vuelve a escribir la pagina en el archivo (con los nuevos datos).
-            new_file.writePage(new_page);
-        }
+        Page nueva_pagina = new_file.allocatePage();
+        const RecordId &rid = nueva_pagina.insertRecord("Nueva registro\n");
+        new_file.writePage(nueva_pagina);
 
-        // Iterar a traves de todas las paginas del archivo.
-        for (FileIterator iter = new_file.begin() ; iter != new_file.end() ; ++iter)
-        {
-           //Page it = *iter;
-           // Iterar a traves de todos los registros en la pagina.
-            for (PageIterator page_iter = (*iter).begin() ; page_iter != (*iter).end() ; ++page_iter)
-            {
-                std::cout << "Registro encontrado: " << *page_iter << " en la pagina " << (*iter).page_number() << "\n";
-            }
-        }
+        FileIterator File_iter = new_file.begin();
+        PageIterator Page_iter = (*File_iter).begin();
+        std::cout<<*Page_iter<<'\n';
 
-        // Recuperar la tercera pagina y agregarle otro registro.
-        Page third_page = new_file.readPage(third_page_number);
-        const RecordId &rid = third_page.insertRecord("world!");
-        new_file.writePage(third_page);
+        (*File_iter).updateRecord(rid,"registro actualizado");
+        std::cout<<*Page_iter<<'\n';
 
-        // Recuperar el registro que acabamos de agregar a la tercera pagina.
-        std::cout << "La tercera pagina tiene un nuevo registro: "
-                  << third_page.getRecord(rid) << "\n\n";
+        (*File_iter).deleteRecord(rid);
+        std::cout<<*Page_iter<<'\n';
+
+        std::cout<<(*File_iter).page_number()<<'\n';
+        std::cout<<(*File_iter).getFreeSpace()<<'\n';
     }
-    // new_file queda fuera del alcance aqui, por lo que el archivo se cierra automaticamente.
-
-     // Borra el archivo ya que hemos terminado con el.
     File::remove(filename);
 
 }
