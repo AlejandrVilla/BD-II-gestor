@@ -6,6 +6,7 @@
 
 #include "pages/page.h"
 #include "pages/File.h"
+#include "buffer.h"
 
 #define PRINT_ERROR(str)  std::cerr << "On Line No:" << __LINE__ << "\n"; std::cerr << str << "\n"; exit(1);                                        
 
