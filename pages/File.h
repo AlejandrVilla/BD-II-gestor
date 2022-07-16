@@ -6,7 +6,7 @@
 
 #include "../types.h"
 
-namespace DB
+namespace DBMS
 {
     class FileIterator;
     struct FileHeader

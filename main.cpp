@@ -9,7 +9,7 @@
 
 #define PRINT_ERROR(str)  std::cerr << "On Line No:" << __LINE__ << "\n"; std::cerr << str << "\n"; exit(1);                                        
 
-using namespace DB;    
+using namespace DBMS;    
 
 const PageId num = 100;
 PageId      pid[num], pageno1, pageno2, pageno3, i;

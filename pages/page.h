@@ -12,7 +12,7 @@
 // #include "Page_Iterator.h"
 /*Metadata de la pagina e indice hacia la siguiente pagina en el file*/
 
-namespace DB
+namespace DBMS
 {
     struct PageHeader
     {
