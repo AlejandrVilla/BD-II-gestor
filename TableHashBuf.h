@@ -5,11 +5,11 @@
 #include <iostream>
 #include "buffer.h"
 
-namespace manager {
+namespace DBMS {
 struct hashetbuck
 {
     File *file;
-    PageId pageNo;
+    PaginaId pageNo;
     FrameId frameNo;
     hashetbuck *next;
 };
@@ -21,21 +21,21 @@ private:
 
     hashetbuck **hashbuck;
 
-    int hash(const File *file, const PageId pageNo);
+    int hash(const File *file, const PaginaId pageNo);
 
 public:
     TableHashBuf(const int htSize); // constructor
 
     ~TableHashBuf(); // destructor
 
-    void insert(const File *file, const PageId pageNo, const FrameId frameNo);
+    void insert(const File *file, const PaginaId pageNo, const FrameId frameNo);
 
-    void lookup(const File *file, const PageId pageNo, FrameId &frameNo);
+    void lookup(const File *file, const PaginaId pageNo, FrameId &frameNo);
 
-    void remove(const File *file, const PageId pageNo);
+    void remove(const File *file, const PaginaId pageNo);
 };
 
-int TableHashBuf::hash(const File *file, const PageId pageNo)
+int TableHashBuf::hash(const File *file, const PaginaId pageNo)
 {
     int tmp, value;
     tmp = (long long)file; // conversión del puntero al objeto archivo en un entero
@@ -67,7 +67,7 @@ TableHashBuf::~TableHashBuf()
     delete[] hashbuck;
 }
 
-void TableHashBuf::insert(const File *file, const PageId pageNo, const FrameId frameNo)
+void TableHashBuf::insert(const File *file, const PaginaId pageNo, const FrameId frameNo)
 {
     int index = hash(file, pageNo);
 
@@ -96,7 +96,7 @@ void TableHashBuf::insert(const File *file, const PageId pageNo, const FrameId f
     hashbuck[index] = auxBuc;
 }
 
-void TableHashBuf::lookup(const File *file, const PageId pageNo, FrameId &frameNo)
+void TableHashBuf::lookup(const File *file, const PaginaId pageNo, FrameId &frameNo)
 {
     int index = hash(file, pageNo);
     hashetbuck *auxBuc = hashbuck[index];
@@ -112,7 +112,7 @@ void TableHashBuf::lookup(const File *file, const PageId pageNo, FrameId &frameN
     std::cerr<< "El valor hash no está presente en la tabla hash del archivo: " << file->filename() << "page: " << pageNo;
 }
 
-void TableHashBuf::remove(const File *file, const PageId pageNo)
+void TableHashBuf::remove(const File *file, const PaginaId pageNo)
 {
 
     int index = hash(file, pageNo);
