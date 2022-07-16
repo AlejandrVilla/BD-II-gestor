@@ -11,16 +11,16 @@ namespace DBMS
     class FileIterator;
     struct FileHeader
     {
-        PageId num_pages;
-        PageId first_used_page;
+        PageId cnt_pages;
+        PageId used_first;
         PageId num_free_pages;
-        PageId first_free_page;
+        PageId free_first;
         bool operator==(const FileHeader &rhs) const
         {
             return (
-                num_pages == rhs.num_pages &&
-                first_used_page == rhs.first_used_page &&
-                first_free_page == rhs.first_free_page &&
+                cnt_pages == rhs.cnt_pages &&
+                used_first == rhs.used_first &&
+                free_first == rhs.free_first &&
                 num_free_pages == rhs.num_free_pages);
         }
     };
@@ -92,7 +92,7 @@ namespace DBMS
         {
             assert(file_ != NULL);
             const FileHeader &header = file_->readHeader();
-            current_page_number_ = header.first_used_page;
+            current_page_number_ = header.used_first;
         }
 
         FileIterator(File *file, PageId page_number)
@@ -224,21 +224,21 @@ namespace DBMS
         Page existing_page;
         if (header.num_free_pages > 0)
         {
-            new_page = readPage(header.first_free_page, true /* allow_free */);
-            new_page.set_page_number(header.first_free_page);
-            header.first_free_page = new_page.next_page_number();
+            new_page = readPage(header.free_first, true /* allow_free */);
+            new_page.set_page_number(header.free_first);
+            header.free_first = new_page.next_page_number();
             --header.num_free_pages;
 
-            if (header.first_used_page == Page::INVALID_NUMBER ||
-                header.first_used_page > new_page.page_number())
+            if (header.used_first == Page::INVALID_NUMBER ||
+                header.used_first > new_page.page_number())
             {
                 // O no tiene páginas usadas o el encabezado de la lista usada es una página posterior
                 // que el que acabamos de asignar, así que se agrega la nueva página al encabezado.
-                if (header.first_used_page > new_page.page_number())
+                if (header.used_first > new_page.page_number())
                 {
-                    new_page.set_next_page_number(header.first_used_page);
+                    new_page.set_next_page_number(header.used_first);
                 }
-                header.first_used_page = new_page.page_number();
+                header.used_first = new_page.page_number();
             }
             else
             {
@@ -260,14 +260,14 @@ namespace DBMS
             }
 
             assert((header.num_free_pages == 0) ==
-                   (header.first_free_page == Page::INVALID_NUMBER));
+                   (header.free_first == Page::INVALID_NUMBER));
         }
         else
         {
-            new_page.set_page_number(header.num_pages);
-            if (header.first_used_page == Page::INVALID_NUMBER)
+            new_page.set_page_number(header.cnt_pages);
+            if (header.used_first == Page::INVALID_NUMBER)
             {
-                header.first_used_page = new_page.page_number();
+                header.used_first = new_page.page_number();
             }
             else
             {
@@ -283,7 +283,7 @@ namespace DBMS
                 assert(existing_page.isUsed());
                 existing_page.set_next_page_number(new_page.page_number());
             }
-            ++header.num_pages;
+            ++header.cnt_pages;
         }
         writePage(new_page.page_number(), new_page);
         if (existing_page.page_number() != Page::INVALID_NUMBER)
@@ -298,7 +298,7 @@ namespace DBMS
     Page File::readPage(const PageId page_number) const
     {
         FileHeader header = readHeader();
-        if (page_number >= header.num_pages)
+        if (page_number >= header.cnt_pages)
         {
             std::cerr << "Peticion dirigida a pagina invalida.\n";
             std::cerr << "Pagina: " << page_number << "\n";
@@ -345,9 +345,9 @@ namespace DBMS
         Page previous_page;
         // Si esta página es el encabezado de la lista usada, actualice el encabezado para que apunte a
         // la página siguiente en la línea.
-        if (page_number == header.first_used_page)
+        if (page_number == header.used_first)
         {
-            header.first_used_page = existing_page.next_page_number();
+            header.used_first = existing_page.next_page_number();
         }
         else
         {
@@ -364,8 +364,8 @@ namespace DBMS
         }
         // Limpia la página y la agrega al encabezado de la lista libre.
         existing_page.initialize();
-        existing_page.set_next_page_number(header.first_free_page);
-        header.first_free_page = page_number;
+        existing_page.set_next_page_number(header.free_first);
+        header.free_first = page_number;
         ++header.num_free_pages;
         if (previous_page.isUsed())
         {
@@ -378,7 +378,7 @@ namespace DBMS
     FileIterator File::begin()
     {
         const FileHeader &header = readHeader();
-        return FileIterator(this, header.first_used_page);
+        return FileIterator(this, header.used_first);
     }
 
     FileIterator File::end()
@@ -393,8 +393,8 @@ namespace DBMS
         if (create_new)
         {
            // El archivo comienza con 1 página (el encabezado).
-            FileHeader header = {1 /* num_pages */, 0 /* first_used_page */,
-                                 0 /* num_free_pages */, 0 /* first_free_page */};
+            FileHeader header = {1 /* cnt_pages */, 0 /* used_first */,
+                                 0 /* num_free_pages */, 0 /* free_first */};
             writeHeader(header);
         }
     }

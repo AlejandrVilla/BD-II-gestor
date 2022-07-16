@@ -7,7 +7,7 @@
 #include "pages/page.h"
 #include "pages/File.h"
 
-#define PRINT_ERROR(str)  std::cerr << "On Line No:" << __LINE__ << "\n"; std::cerr << str << "\n"; exit(1);                                        
+#define PRINT_ERROR(str)  std::cerr << "En la linea numero:" << __LINE__ << "\n"; std::cerr << str << "\n"; exit(1);                                        
 
 using namespace DBMS;    
 
@@ -16,7 +16,6 @@ PageId      pid[num], pageno1, pageno2, pageno3, i;
 RecordId    rid[num], rid2, rid3;
 Page        *page, *page2, *page3;
 char        tmpbuf[100];
-// BufMgr      *bufMgr;
 File        *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr;
 
 

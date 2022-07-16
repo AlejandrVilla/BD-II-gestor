@@ -1,14 +1,14 @@
 #pragma once
 
 #include "pages/File.h"
-#include "bufHashTbl.h"
+#include "TableHashBuf.h"
 namespace siprec{
-class BufMgr;
+class BufManager;
 
-class BufDesc
+class BufFrame
 {
 
-    friend class BufMgr;
+    friend class BufManager;
 
 private:
     File *file;
@@ -17,7 +17,7 @@ private:
 
     FrameId frameNo;
 
-    int pinCnt;
+    int num_pin;
 
     bool dirty;
 
@@ -27,7 +27,7 @@ private:
 
     void Clear()
     {
-        pinCnt = 0;
+        num_pin = 0;
         file = NULL;
         pageNo = Page::INVALID_NUMBER;
         dirty = false;
@@ -39,7 +39,7 @@ private:
     {
         file = filePtr;
         pageNo = pageNum;
-        pinCnt = 1;
+        num_pin = 1;
         dirty = false;
         valid = true;
         refbit = true;
@@ -56,18 +56,18 @@ private:
             std::cout << "file:NULL ";
 
         std::cout << "valid:" << valid << " ";
-        std::cout << "pinCnt:" << pinCnt << " ";
+        std::cout << "num_pin:" << num_pin << " ";
         std::cout << "dirty:" << dirty << " ";
         std::cout << "refbit:" << refbit << "\n";
     }
 
-    BufDesc()
+    BufFrame()
     {
         Clear();
     }
 };
 
-struct BufStats
+struct BufMethodAccess
 {
 
     int accesses;
@@ -81,24 +81,24 @@ struct BufStats
         accesses = diskreads = diskwrites = 0;
     }
 
-    BufStats()
+    BufMethodAccess()
     {
         clear();
     }
 };
 
-class BufMgr
+class BufManager
 {
 private:
     FrameId clockHand;
 
     std::uint32_t numBufs;
 
-    BufHashTbl *hashTable;
+    TableHashBuf *hashTable;
 
-    BufDesc *bufDescTable;
+    BufFrame *BufFrameTable;
 
-    BufStats bufStats;
+    BufMethodAccess BufMethodAccess;
 
     void advanceClock();
 
@@ -107,9 +107,9 @@ private:
 public:
     Page *bufPool;
 
-    BufMgr(std::uint32_t bufs);
+    BufManager(std::uint32_t bufs);
 
-    ~BufMgr();
+    ~BufManager();
 
     void readPage(File *file, const PageId PageNo, Page *&page);
 
@@ -123,41 +123,41 @@ public:
 
     void printSelf();
 
-    BufStats &getBufStats()
+    BufMethodAccess &getBufMethodAccess()
     {
-        return bufStats;
+        return BufMethodAccess;
     }
-    void clearBufStats()
+    void clearBufMethodAccess()
     {
-        bufStats.clear();
+        BufMethodAccess.clear();
     }
 };
 
-BufMgr::BufMgr(std::uint32_t bufs)
+BufManager::BufManager(std::uint32_t bufs)
     : numBufs(bufs)
 {
-    bufDescTable = new BufDesc[bufs];
+    BufFrameTable = new BufFrame[bufs];
 
     for (FrameId i = 0; i < bufs; i++)
     {
-        bufDescTable[i].frameNo = i;
-        bufDescTable[i].valid = false;
+        BufFrameTable[i].frameNo = i;
+        BufFrameTable[i].valid = false;
     }
 
     bufPool = new Page[bufs];
 
     int htsize = ((((int)(bufs * 1.2)) * 2) / 2) + 1;
-    hashTable = new BufHashTbl(htsize); // asignar la tabla hash del buffer
+    hashTable = new TableHashBuf(htsize); // asignar la tabla hash del buffer
 
     clockHand = bufs - 1;
 }
 
-BufMgr::~BufMgr()
+BufManager::~BufManager()
 {
 
     for (uint32_t i = 0; i < numBufs; i++)
     {
-        BufDesc buf = bufDescTable[i];
+        BufFrame buf = BufFrameTable[i];
         if (buf.dirty)
         {
             flushFile(buf.file);
@@ -165,12 +165,12 @@ BufMgr::~BufMgr()
     }
 
     delete[] bufPool;
-    delete[] bufDescTable;
+    delete[] BufFrameTable;
     delete hashTable;
 }
 
 // Avanzar el reloj a la siguiente trama del buffer pool
-void BufMgr::advanceClock()
+void BufManager::advanceClock()
 {
     clockHand++;
     clockHand = clockHand % numBufs;
@@ -178,12 +178,12 @@ void BufMgr::advanceClock()
 
 // Allocates a free frame using the clock algorithm; if necessary, writing a dirty page back
 // to disk. Throws BufferExceededException if all buffer frames are pinned.
-void BufMgr::allocBuf(FrameId &frame)
+void BufManager::allocBuf(FrameId &frame)
 {
     // Comprobar si se ha encontrado la página
     bool frameNF = true;
     // Almacenar el frame que se está comprobando
-    BufDesc buf;
+    BufFrame buf;
     // Contador de bucle. Asegura que el bucle while no llegue al infinito
     uint32_t count = 0;
 
@@ -194,7 +194,7 @@ void BufMgr::allocBuf(FrameId &frame)
         // Incrementa el contador
         count++;
         // Obtenga el frame actual que se va a probar
-        buf = bufDescTable[clockHand];
+        buf = BufFrameTable[clockHand];
 
         if (buf.valid == false)
         {
@@ -203,18 +203,18 @@ void BufMgr::allocBuf(FrameId &frame)
         else if (buf.refbit == true)
         {
             // debemos cambiar directamente el valor del refbit
-            bufDescTable[clockHand].refbit = false;
+            BufFrameTable[clockHand].refbit = false;
         }
-        else if (buf.pinCnt == 0)
+        else if (buf.num_pin == 0)
         {
             frameNF = false;
             hashTable->remove(buf.file, buf.pageNo);
             if (buf.dirty)
             {
-                bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
-                bufDescTable[clockHand].dirty = false;
+                BufFrameTable[clockHand].file->writePage(bufPool[clockHand]);
+                BufFrameTable[clockHand].dirty = false;
             }
-            bufDescTable[clockHand].Clear();
+            BufFrameTable[clockHand].Clear();
         }
     }
 
@@ -228,7 +228,7 @@ void BufMgr::allocBuf(FrameId &frame)
 
 // Lee una página específica. Si la página está en el buffer, la leerá desde allí. En caso contrario
 // la página se cargará en el pool de buffers.
-void BufMgr::readPage(File *file, const PageId pageNo, Page *&page)
+void BufManager::readPage(File *file, const PageId pageNo, Page *&page)
 {
     FrameId fno;
     try
@@ -236,8 +236,8 @@ void BufMgr::readPage(File *file, const PageId pageNo, Page *&page)
         // buscar la página en la tabla de hash
         hashTable->lookup(file, pageNo, fno);
         // si se encuentra, incrementa la cuenta de pines, pone el refbit a 0 y devuelve la página
-        bufDescTable[fno].pinCnt++;
-        bufDescTable[fno].refbit = true;
+        BufFrameTable[fno].num_pin++;
+        BufFrameTable[fno].refbit = true;
         page = &bufPool[fno];
     }
     catch (std::tuple<std::string,PageId> a)
@@ -245,70 +245,70 @@ void BufMgr::readPage(File *file, const PageId pageNo, Page *&page)
         // Si la página no está en la tabla de hash, significa que hubo una pérdida de búfer, por lo que necesitamos leer del disco y asignar un marco de búfer para colocar la página
         allocBuf(fno);
         bufPool[fno] = file->readPage(pageNo);
-        bufDescTable[fno].Set(file, pageNo);
+        BufFrameTable[fno].Set(file, pageNo);
         page = &bufPool[fno];
         hashTable->insert(file, pageNo, fno);
     }
 }
 
-// Disminuye el pinCnt de la frame que contiene (file, PageNo) y, si dirty == true, pone
+// Disminuye el num_pin de la frame que contiene (file, PageNo) y, si dirty == true, pone
 // el dirty bit. Lanza PAGENOTPINNED si la cuenta de pines ya es 0. No hace nada si
 // la página no se encuentra en la búsqueda de la tabla hash.
-void BufMgr::unPinPage(File *file, const PageId pageNo, const bool dirty)
+void BufManager::unPinPage(File *file, const PageId pageNo, const bool dirty)
 {
     FrameId fno;
     // buscar hashtable
     hashTable->lookup(file, pageNo, fno);
     // si esta página ya está desanclada, lanza una excepción
-    if (bufDescTable[fno].pinCnt == 0)
+    if (BufFrameTable[fno].num_pin == 0)
     {
-        std::cerr << "Esta página no está anclada. file:  " << "pageNotPinned" << "page: " << bufDescTable[fno].pageNo << "frame: " << fno;
+        std::cerr << "Esta página no está anclada. file:  " << "pageNotPinned" << "page: " << BufFrameTable[fno].pageNo << "frame: " << fno;
         return;
     }
-        //throw PageNotPinnedException("pageNotPinned", bufDescTable[fno].pageNo, fno);
+        //throw PageNotPinnedException("pageNotPinned", BufFrameTable[fno].pageNo, fno);
     else
-        bufDescTable[fno].pinCnt--; // Disminuir la cantidad de pines
+        BufFrameTable[fno].num_pin--; // Disminuir la cantidad de pines
     if (dirty)
-        bufDescTable[fno].dirty = true; // Establece dirty
+        BufFrameTable[fno].dirty = true; // Establece dirty
 }
 
-void BufMgr::flushFile(const File *file)
+void BufManager::flushFile(const File *file)
 {
     for (uint32_t i = 0; i < numBufs; i++)
     {
-        if (bufDescTable[i].file == file)
+        if (BufFrameTable[i].file == file)
         {
-            if (!bufDescTable[i].valid)
+            if (!BufFrameTable[i].valid)
             {
                 // Si el frame está no es valido, lanza BadBufferException
 
                 std::cerr << "Este buffer está mal: " << i;
                 return;
-                //throw BadBufferException(i, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
+                //throw BadBufferException(i, BufFrameTable[i].dirty, BufFrameTable[i].valid, BufFrameTable[i].refbit);
             }
-            if (bufDescTable[i].pinCnt != 0)
+            if (BufFrameTable[i].num_pin != 0)
             {
                 // Si el frame está fijado, lanza PagePinnedException
-                std::cerr << "Esta pagina ya está anclada. file:  " << "pagePinned" << "page: " << bufDescTable[i].pageNo << "frame: " << i;
+                std::cerr << "Esta pagina ya está anclada. file:  " << "pagePinned" << "page: " << BufFrameTable[i].pageNo << "frame: " << i;
                 return;
-                //throw PagePinnedException("pagePinned", bufDescTable[i].pageNo, i);
+                //throw PagePinnedException("pagePinned", BufFrameTable[i].pageNo, i);
             }
-            if (bufDescTable[i].dirty)
+            if (BufFrameTable[i].dirty)
             {
                 // Si la trama está corrupta, la escribe en el disco, y luego pone el valor de dirty en false
-                bufDescTable[i].file->writePage(bufPool[i]);
-                bufDescTable[i].dirty = false;
+                BufFrameTable[i].file->writePage(bufPool[i]);
+                BufFrameTable[i].dirty = false;
             }
             // Eliminar la página de la tabla de hash
-            hashTable->remove(file, bufDescTable[i].pageNo);
+            hashTable->remove(file, BufFrameTable[i].pageNo);
             // Limpiar buffer frame
-            bufDescTable[i].Clear();
+            BufFrameTable[i].Clear();
         }
     }
 }
 
 // Este método devolverá una página recién asignada.
-void BufMgr::allocPage(File *file, PageId &pageNo, Page *&page)
+void BufManager::allocPage(File *file, PageId &pageNo, Page *&page)
 {
     FrameId frameNum;
 
@@ -316,19 +316,19 @@ void BufMgr::allocPage(File *file, PageId &pageNo, Page *&page)
     allocBuf(frameNum);
     bufPool[frameNum] = p1;
     hashTable->insert(file, p1.page_number(), frameNum);
-    bufDescTable[frameNum].Set(file, p1.page_number());
+    BufFrameTable[frameNum].Set(file, p1.page_number());
     pageNo = p1.page_number();
     page = &bufPool[frameNum];
 }
 
 // Este método elimina una página concreta del archivo.
-void BufMgr::disposePage(File *file, const PageId PageNo)
+void BufManager::disposePage(File *file, const PageId PageNo)
 {
     try
     {
         FrameId frameNum;
         hashTable->lookup(file, PageNo, frameNum);
-        bufDescTable[frameNum].Clear();
+        BufFrameTable[frameNum].Clear();
         hashTable->remove(file, PageNo);
         file->deletePage(PageNo);
     }
@@ -338,14 +338,14 @@ void BufMgr::disposePage(File *file, const PageId PageNo)
     }
 }
 
-void BufMgr::printSelf(void)
+void BufManager::printSelf(void)
 {
-    BufDesc *tmpbuf;
+    BufFrame *tmpbuf;
     int validFrames = 0;
 
     for (std::uint32_t i = 0; i < numBufs; i++)
     {
-        tmpbuf = &(bufDescTable[i]);
+        tmpbuf = &(BufFrameTable[i]);
         std::cout << "FrameNo:" << i << " ";
         tmpbuf->Print();
 
