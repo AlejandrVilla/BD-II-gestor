@@ -5,8 +5,7 @@
 #include "nodo.h"
 
 using namespace std;
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Constructor
+
 ListaValor::ListaValor(){
 	principio = NULL;
 	anterior = NULL;
@@ -14,8 +13,7 @@ ListaValor::ListaValor(){
 	encontrado = NO;
 	cuantosVal = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Destructor
+
 ListaValor::~ListaValor(){
 	CajaValor *p, *aux;
 	p = principio;
@@ -30,7 +28,7 @@ ListaValor::~ListaValor(){
 	encontrado = NO;
 	cuantosVal = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ListaValor::nuevo(){
     principio = NULL;
 	anterior = NULL;
@@ -38,7 +36,7 @@ void ListaValor::nuevo(){
 	encontrado = NO;
 	cuantosVal = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ListaValor::limpiar(){
     CajaValor *p, *aux;
 	p = principio;
@@ -53,12 +51,7 @@ void ListaValor::limpiar(){
 	encontrado = NO;
 	cuantosVal = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//Funciones de la clase
-/*
-    Esta funcion revisa la lista ordenada para determinar la ubicacion de una
-    caja en la lista.
-*/
+
 void ListaValor::buscar(int a){
 	CajaValor *p;
 	p = principio;
@@ -93,7 +86,7 @@ void ListaValor::buscar(int a){
 	donde = Final;
 	return;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Esta funcion agrega una caja a la lista ordenada con el valor que recibe, en
     la posicion que le corresponde.
@@ -125,7 +118,7 @@ int ListaValor::agregar(int a){
 	cuantosVal++;
 	return 1;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Esta funcion busca el valor recibido en la lista para eliminar la caja que
     contenga ese valor.
@@ -150,7 +143,6 @@ int ListaValor::borrar(int a){
 	cuantosVal--;
 	return 1;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /*
     Esta funcion saca la primera caja de la lista ordenada.
 */
@@ -180,7 +172,7 @@ int ListaValor::sacar(void){//Saca el ultimo
 	cuantosVal--;
 	return valor;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //Constructor
 ListaDireccion::ListaDireccion(){
 	principio = NULL;
@@ -189,7 +181,7 @@ ListaDireccion::ListaDireccion(){
 	encontrado = NO;
 	cuantosDir = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //Destructor
 ListaDireccion::~ListaDireccion(){
 	CajaDireccion *p, *aux;
@@ -205,7 +197,7 @@ ListaDireccion::~ListaDireccion(){
 	encontrado = NO;
 	cuantosDir = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ListaDireccion::nuevo(){
     principio = NULL;
 	anterior = NULL;
@@ -213,7 +205,7 @@ void ListaDireccion::nuevo(){
 	encontrado = NO;
 	cuantosDir = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ListaDireccion::limpiar(){
     CajaDireccion *p, *aux;
 	p = principio;
@@ -228,7 +220,7 @@ void ListaDireccion::limpiar(){
 	encontrado = NO;
 	cuantosDir = 0;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 //Funciones de la clase
 /*
     Esta funcion revisa la lista ordenada para determinar la ubicacion de una
@@ -281,7 +273,7 @@ void ListaDireccion::buscar(Nodo *p){
 	donde = Final;
 	return;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ListaDireccion::buscarBorrar(Nodo *p){
 	CajaDireccion *q;
 	q = principio;
@@ -310,7 +302,7 @@ void ListaDireccion::buscarBorrar(Nodo *p){
 	return;
 
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Esta funcion agrega una caja a la lista ordenada con el valor que recibe, en
     la posicion que le corresponde.
@@ -342,7 +334,7 @@ int ListaDireccion::agregar(Nodo *p){
 	cuantosDir++;
 	return 1;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Esta funcion busca el valor recibido en la lista para eliminar la caja que
     contenga ese valor.
@@ -367,7 +359,7 @@ int ListaDireccion::borrar(Nodo *p){
 	cuantosDir--;
 	return 1;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Esta funcion saca la primera caja de la lista ordenada.
 */

@@ -6,13 +6,13 @@
 #include "cola.h"
 using namespace std;
 
-/////////////////////////////////////////////////////Constructor/////////////////////////////////////////////////////
+
 Arbol::Arbol(int a){
     orden = a;
     raiz = NULL;
     encontrado = false;
 }
-/////////////////////////////////////////////////////Destructor/////////////////////////////////////////////////////
+
 Arbol::~Arbol(){
     Nodo *p;
     int minimo;
@@ -29,20 +29,19 @@ Arbol::~Arbol(){
     encontrado = false;
 
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Busca la ubicacion para agregar el nuevo valor, si esta repetido no se agrega.
-
-    int a: el valor que se buscara en el arbol.
 */
+
 int Arbol::buscar(int a){
     Nodo *p = raiz;
     CajaValor *val;
     CajaDireccion *q;
 
     int n = 0;
-    while(true){//Busca la hoja del valor
-        if(p->esHoja == true){//Busca si esta agregado el elemento en esa hoja
+    while(true){ //Busca la hoja del valor
+        if(p->esHoja == true){ //Busca si esta agregado el elemento en esa hoja
 
             val = p->llaves.dondePrincipio();
 
@@ -60,7 +59,7 @@ int Arbol::buscar(int a){
             donde = p;
             return 1;
 
-        }else{//Busca en que direccion del nodo del arbol debe bajar
+        }else{ //Busca en que direccion del nodo del arbol debe bajar
 
             n = 0;
             val = p->llaves.dondePrincipio();
@@ -85,11 +84,9 @@ int Arbol::buscar(int a){
 
 
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Permite agregar un valor al arbol y ajustar el arbol en caso de ser necesario.
-
-    int a: el valor que se desea agregar al arbol.
 */
 void Arbol::agregar(int a){
     Nodo *p;
@@ -125,12 +122,9 @@ void Arbol::agregar(int a){
     }
 
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Permite dividir las hojas del arbol y en caso de ser necesarios reajustar los nodos padres del arbol.
-
-    int a: el valor que se desea agregar al arbol.
-    Nodo *p: la direccion del nodo donde se agregara el valor.
 */
 void Arbol::dividirHojas(int a, Nodo *p){
 
@@ -259,10 +253,9 @@ void Arbol::dividirHojas(int a, Nodo *p){
     }
 
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Permite dividir los nodos intermedios y reajustar el arbol.
-
     Nodo *p: la direccion del nodo que se debera ajustar en el arbol.
 */
 void Arbol::dividirPadres(Nodo *p){
@@ -323,11 +316,9 @@ void Arbol::dividirPadres(Nodo *p){
         hijo2->padre = padre;
     }
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////
 /*
     Recibe un valor que debera ser borrado del arbol.
-
-    int a:valor que se desea borrar.
 */
 int Arbol::borrar(int a){
     Nodo *p;
@@ -369,13 +360,11 @@ int Arbol::borrar(int a){
     }
     return 1;
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Modifica las hojas del arbol y ajusta el arbol de ser necesario.
-
-    int a:valor que se desea borrar.
-    Nodo *p la direccion del nodo donde se encuentra el valor.
 */
+
 void Arbol::modificarHojas(int a, Nodo *p){
     Nodo *h_der, *h_izq, *padre, *aux;
     int indice, valor;
@@ -609,11 +598,9 @@ void Arbol::modificarHojas(int a, Nodo *p){
 
     }
 }
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /*
     Modifica los nodos intermedios del arbol y ajusta el arbol de ser necesario.
-
-    Nodo *p la direccion del nodo que debe ajustarce en el arbol.
 */
 void Arbol::modificarPadres(Nodo *p){//Estos casos permiten ajustar el arbol en los nodos intermedios
     Nodo *padre, *h_izq, *h_der, *direccion;
