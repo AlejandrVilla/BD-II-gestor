@@ -225,13 +225,12 @@ namespace DBMS
         Pagina pagina_existente;
         if (header.num_free_pages > 0)
         {
-            nueva_pagina = readPage(header.free_first, true /* allow_free */);
+            nueva_pagina = readPage(header.free_first, true );
             nueva_pagina.set_num_pagina(header.free_first);
             header.free_first = nueva_pagina.sig_num_pagina();
             --header.num_free_pages;
 
-            if (header.used_first == Pagina::INVALID_NUMBER ||
-                header.used_first > nueva_pagina.num_pagina())
+            if (header.used_first == Pagina::INVALID_NUMBER || header.used_first > nueva_pagina.num_pagina())
             {
                 // O no tiene páginas usadas o el encabezado de la lista usada es una página posterior
                 // que el que acabamos de asignar, así que se agrega la nueva página al encabezado.
@@ -249,8 +248,7 @@ namespace DBMS
                 for (FileIterator iter = begin(); iter != end(); ++iter)
                 {
                     sig_num_pagina = (*iter).sig_num_pagina();
-                    if (sig_num_pagina > nueva_pagina.num_pagina() ||
-                        sig_num_pagina == Pagina::INVALID_NUMBER)
+                    if (sig_num_pagina > nueva_pagina.num_pagina() || sig_num_pagina == Pagina::INVALID_NUMBER)
                     {
                         pagina_existente = *iter;
                         break;
@@ -260,8 +258,7 @@ namespace DBMS
                 nueva_pagina.set_sig_num_pagina(sig_num_pagina);
             }
 
-            assert((header.num_free_pages == 0) ==
-                   (header.free_first == Pagina::INVALID_NUMBER));
+            assert((header.num_free_pages == 0) == (header.free_first == Pagina::INVALID_NUMBER));
         }
         else
         {
