@@ -3,20 +3,22 @@
 #include <list>
 #include <vector>
 
+// algoritmo clock
 class Clock : public Replacer
 {
-public:
-    explicit Clock(size_t num_pages);
-    ~Clock() override;
-    bool Victim(int32_t *frame_id) override;
-    void Pin(int32_t frame_id) override;
-    void Unpin(int32_t frame_id) override;
-    size_t Size() override; // REtorna el numero de frames que estan presentes en el algoritmo
-private:
-    size_t clock_hand; // Indice que recorre los frames del algoritmo
-    size_t buffer_size;// Tamanio que se usa en el buffer
-    std::vector<bool> ref_;// Ref_bit 
-    std::vector<bool> in_;//  Presente en el clock ? 
+    public:
+        explicit Clock(size_t num_pages);
+        ~Clock() override;
+        bool Victim(int *frame_id) override;
+        void Pin(int frame_id) override;
+        void Unpin(int frame_id) override;
+        // Retorna el numero de frames que estan presentes en el algoritmo
+        size_t Size() override;         
+    private:
+        size_t clock_hand;          // Indice que recorre los frames del algoritmo
+        size_t buffer_size;         // Tamanio que se usa en el buffer
+        std::vector<bool> ref_;     // Ref_bit 
+        std::vector<bool> in_;      //  Presente en el clock ? 
 };
 
 Clock::Clock(size_t num_pages)
@@ -29,7 +31,7 @@ Clock::Clock(size_t num_pages)
 
 Clock::~Clock() = default;
 
-bool Clock::Victim(int32_t *frame_id)
+bool Clock::Victim(int *frame_id)
 {
     while(Size() > 0)
     {
@@ -47,20 +49,17 @@ bool Clock::Victim(int32_t *frame_id)
             clock_hand++;               // avanza indice
         }
         else
-        {
             clock_hand++;
-        }
     }
-    //std::cout << "size = " << Size() << "\n";
     return false;
 }
 
-void Clock::Pin(int32_t frame_id) 
+void Clock::Pin(int frame_id) 
 {
     in_[frame_id] = false;
 }
 
-void Clock::Unpin(int32_t frame_id) 
+void Clock::Unpin(int frame_id) 
 {
     ref_[frame_id] = true;
     in_[frame_id] = true;
@@ -70,11 +69,7 @@ size_t Clock::Size()
 { 
     size_t counter = 0;
     for(size_t i = 0; i < buffer_size; ++i)
-    {
         if(in_[i])
-        {
             counter++;
-        }
-    }
     return counter;
 }

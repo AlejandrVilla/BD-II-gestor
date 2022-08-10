@@ -23,12 +23,12 @@ int main()
     cout << "USANDO BUFFER\n";
     Buffer n_buffer(3, &n_file);
     Page *pag;
-    for(auto it = n_file.begin(); it != n_file.end(); it++){
+    for(auto it = n_file.begin(); it != n_file.end(); it++)
+    {
         pag = n_buffer.FetchPageImpl(it->page_number());
         cout << "Pagina desde Buffer "<< it->page_number() <<"\n";
-        for(auto it2 = pag->begin() ; it2 != pag->end() ; ++it2){
+        for(auto it2 = pag->begin() ; it2 != pag->end() ; ++it2)
             cout<<"Slot: "<<it2->slot_number << " Record_id: "<<it2->record_ID<<" "<<it2->record <<'\n';
-        }
         cout<<'\n';
     }
 
