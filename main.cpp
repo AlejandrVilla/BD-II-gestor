@@ -1,57 +1,49 @@
-#include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <cstring>
-#include <memory>
+#include <bits/stdc++.h>
+#include "page.h"
 
-#include "pages/page.h"
-#include "pages/File.h"
-
-#define PRINT_ERROR(str)  std::cerr << "On Line No:" << __LINE__ << "\n"; std::cerr << str << "\n"; exit(1);                                        
-
-using namespace DB;    
-
-const PageId num = 100;
-PageId      pid[num], pageno1, pageno2, pageno3, i;
-RecordId    rid[num], rid2, rid3;
-Page        *page, *page2, *page3;
-char        tmpbuf[100];
-// BufMgr      *bufMgr;
-File        *file1ptr, *file2ptr, *file3ptr, *file4ptr, *file5ptr;
-
+using namespace std;
 
 int main()
 {
-    // El siguiente codigo muestra como usar las clases de archivo y pagina
-
-    const std::string &filename = "test.txt";
-    // Limpiar cualquier ejecucion anterior que falle.
-
-    File::remove(filename);
-
+    vector<string> data = {"este", "es", "un", "conjunto", "de", "registros"};
+    vector<int> slots;
+    int k=1;
+    Page new_page(k);
+    for(int i=0 ; i<data.size() ; ++i)
     {
-        // Crear un nuevo archivo de base de datos.
-        File new_file = File::create(filename);
-
-        // Asignar algunas paginas y poner datos en ellas.
-        Page nueva_pagina = new_file.allocatePage();
-        const RecordId &rid = nueva_pagina.insertRecord("Nueva registro\n");
-        new_file.writePage(nueva_pagina);
-
-        FileIterator File_iter = new_file.begin();
-        PageIterator Page_iter = (*File_iter).begin();
-        std::cout<<*Page_iter<<'\n';
-
-        (*File_iter).updateRecord(rid,"registro actualizado");
-        std::cout<<*Page_iter<<'\n';
-
-        (*File_iter).deleteRecord(rid);
-        std::cout<<*Page_iter<<'\n';
-
-        std::cout<<(*File_iter).page_number()<<'\n';
-        std::cout<<(*File_iter).getFreeSpace()<<'\n';
+        int rid;
+        rid = new_page.insert_record(data[i]);
+        slots.push_back(rid);
     }
-    File::remove(filename);
+    for(auto it = new_page.begin() ; it!=new_page.end() ; ++it )
+        cout<<"pagina "<<it->page_number<<" slot "<<it->slot_number<<" record_id "<<it->record_ID <<' '<<it->record <<'\n';
+    cout<<'\n';
 
+    cout<<new_page.get_record(slots[1])<<'\n';
+
+    new_page.delete_record(slots[1]);
+    cout<<new_page.get_record(slots[1])<<'\n';
+
+    for(auto it = new_page.begin() ; it!=new_page.end() ; ++it )
+        cout<<"pagina "<<it->page_number<<" slot "<<it->slot_number<<" record_id "<<it->record_ID <<' '<<it->record <<'\n';
+    cout<<'\n';
+
+    cout<<"slots libres "<<new_page.get_num_free_slot()<<'\n';
+
+    int rid = new_page.insert_record("nuevo registro");
+    cout<< new_page.get_record(rid)<<'\n';
+    cout<< new_page.get_record(slots[1])<<'\n';
+    cout<<"slots libres "<<new_page.get_num_free_slot()<<'\n';
+
+    for(auto it = new_page.begin() ; it!=new_page.end() ; ++it )
+        cout<<"pagina "<<it->page_number<<" slot "<<it->slot_number<<" record_id "<<it->record_ID <<' '<<it->record <<'\n';
+    cout<<'\n';
+
+    rid = new_page.insert_record("nuevo registro");
+    new_page.updated_record(slots[2], "pene");
+    cout<<new_page.get_record(slots[2])<<'\n';
+
+    for(auto it = new_page.begin() ; it!=new_page.end() ; ++it )
+        cout<<"pagina "<<it->page_number<<" slot "<<it->slot_number<<" record_id "<<it->record_ID <<' '<<it->record <<'\n';
+    cout<<'\n';
 }
-

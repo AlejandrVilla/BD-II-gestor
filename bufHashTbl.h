@@ -1,20 +1,13 @@
 #pragma once
+#include "file.h"
 
-#include "pages/File.h"
-#include <memory>
-#include <iostream>
-#include "buffer.h"
-#include "bufHashTbl.h"
 
-namespace siprec{
-struct hashBucket
+
+struct hashBucket       // celda de la tabla hash
 {
     File *file;
-
-    PageId pageNo;
-
-    FrameId frameNo;
-
+    int32_t pageNo;
+    int32_t frameNo;
     hashBucket *next;
 };
 
@@ -22,35 +15,29 @@ class BufHashTbl
 {
 private:
     int HTSIZE;
-
     hashBucket **ht;
-
-    int hash(const File *file, const PageId pageNo);
+    int hash(const File *file, const int32_t pageNo);
 
 public:
     BufHashTbl(const int htSize); // constructor
-
     ~BufHashTbl(); // destructor
-
-    void insert(const File *file, const PageId pageNo, const FrameId frameNo);
-
-    void lookup(const File *file, const PageId pageNo, FrameId &frameNo);
-
-    void remove(const File *file, const PageId pageNo);
+    void insert(const File *file, const int32_t pageNo, const int32_t frameNo);
+    void lookup(const File *file, const int32_t pageNo, int32_t &frameNo);
+    void remove(const File *file, const int32_t pageNo);
 };
 
-int BufHashTbl::hash(const File *file, const PageId pageNo)
+int BufHashTbl::hash(const File *file, const int32_t pageNo)
 {
     int tmp, value;
-    tmp = (long long)file; // conversión del puntero al objeto archivo en un entero
+    tmp = (long long)file; // conversion del puntero a file, a puntero long long
     value = (tmp + pageNo) % HTSIZE;
     return value;
 }
 
 BufHashTbl::BufHashTbl(int htSize)
     : HTSIZE(htSize)
-{
-    // asignar un arreglo de punteros a los hashBuckets
+{   
+    // Se asigna un arreglo de punteros a hashBuckets
     ht = new hashBucket *[htSize];
     for (int i = 0; i < HTSIZE; i++)
         ht[i] = NULL;
@@ -71,7 +58,7 @@ BufHashTbl::~BufHashTbl()
     delete[] ht;
 }
 
-void BufHashTbl::insert(const File *file, const PageId pageNo, const FrameId frameNo)
+void BufHashTbl::insert(const File *file, const int32_t pageNo, const int32_t frameNo)
 {
     int index = hash(file, pageNo);
 
@@ -80,7 +67,7 @@ void BufHashTbl::insert(const File *file, const PageId pageNo, const FrameId fra
     {
         if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)
         {
-            std::cerr<<"Entrada correspondiente al valor hash del archivo:" << tmpBuc->file->filename() << "page:" << tmpBuc->pageNo << "ya está presente en la tabla hash.";           
+            std::cerr<<"La entrada que corresponde al valor hash del file ya está presente en la tabla hash\n";           
             return;
         }
         tmpBuc = tmpBuc->next;
@@ -89,34 +76,34 @@ void BufHashTbl::insert(const File *file, const PageId pageNo, const FrameId fra
     tmpBuc = new hashBucket;
     if (!tmpBuc)
     {
-        std::cerr<< "Se ha producido un error en la tabla hash del buffer.";
+        std::cerr<< "Ocurrió un error en la tabla hash.\n";
         return;
     }
 
     tmpBuc->file = (File *)file;
     tmpBuc->pageNo = pageNo;
     tmpBuc->frameNo = frameNo;
-    tmpBuc->next = ht[index];
-    ht[index] = tmpBuc;
+    tmpBuc->next = ht[index];       // desplaza celda
+    ht[index] = tmpBuc;             // inserta celda
 }
 
-void BufHashTbl::lookup(const File *file, const PageId pageNo, FrameId &frameNo)
+void BufHashTbl::lookup(const File *file, const int32_t pageNo, int32_t &frameNo)
 {
     int index = hash(file, pageNo);
     hashBucket *tmpBuc = ht[index];
     while (tmpBuc)
     {
-        if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)
+        if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)       // busca a traves de la lista en una celda
         {
             frameNo = tmpBuc->frameNo; // retorna frameNo por referencia
             return;
         }
         tmpBuc = tmpBuc->next;
     }
-    std::cerr<< "El valor hash no está presente en la tabla hash del archivo: " << file->filename() << "page: " << pageNo;
+    std::cerr<< "El valor no está presente en la tabla hash, file\n";
 }
 
-void BufHashTbl::remove(const File *file, const PageId pageNo)
+void BufHashTbl::remove(const File *file, const int32_t pageNo)
 {
 
     int index = hash(file, pageNo);
@@ -125,22 +112,20 @@ void BufHashTbl::remove(const File *file, const PageId pageNo)
 
     while (tmpBuc)
     {
-        if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)
+        if (tmpBuc->file == file && tmpBuc->pageNo == pageNo)   // encuentra
         {
-            if (prevBuc)
-                prevBuc->next = tmpBuc->next;
+            if (prevBuc)                            // si prev tiene algo
+                prevBuc->next = tmpBuc->next;       // prev->nex guarda el siguiente  tmpBuc
             else
-                ht[index] = tmpBuc->next;
+                ht[index] = tmpBuc->next;           // primer elemento es el siguiente a tmpBuc
 
-            delete tmpBuc;
+            delete tmpBuc;  // elimina tmpBuc
             return;
         }
         else
         {
-            prevBuc = tmpBuc;
-            tmpBuc = tmpBuc->next;
+            prevBuc = tmpBuc;       // guarda actual
+            tmpBuc = tmpBuc->next;  // avanza
         }
     }
-    std::cerr<< "El valor hash no está presente en la tabla hash del archivo: " << file->filename() << "page: " << pageNo;
-}
-}
+    std::cerr<< "El valor hash(key) no esta presente el la tabla hash, file\n";

@@ -1,358 +1,246 @@
-#pragma once
+#pragma once 
+#include "page.h"
+#include "replacer.h"
+#include "Clock.h"
+#include "LRU.h"
+#include "MRU.h"
+#include "file.h"
+#include <unordered_map>
+#include <iostream>
 
-#include "pages/File.h"
-#include "bufHashTbl.h"
-namespace siprec{
-class BufMgr;
-
-class BufDesc
+// Frame del Buffer
+struct Frame
 {
+    Page    *page;
+    int dirty_bit;
+    int pin_count;      // cuantos tienen acceso a la pagina
+};
 
-    friend class BufMgr;
+// Buffer pool
+class Buffer
+{
+    public:
+        Buffer(size_t pool_size, File *file);
+        bool  FlushPageImpl (int page_id);
+        Page* NewPageImpl   (int *page_id);
+        Page* FetchPageImpl (int page_id);
+        bool  DeletePageImpl(int page_id);
+        bool  UnpinPageImpl (int page_id, bool is_dirty);
+        void  FlushAllPagesImpl();
+        ~Buffer();
+        std::vector<Frame> buffer_pool;
+    private:
+        size_t pool_size_;                          // Tamanio del buffer    
+        Replacer *replacer_;                        // Clase abstracta (polimorfismo)
+        std::list<int> free_list_;                  // Lista de indices de frames libres
+        std::unordered_map<int, int> page_table_;   // Mapa de <idPage , idFrame>
+        File *file_;
+};
 
-private:
-    File *file;
-
-    PageId pageNo;
-
-    FrameId frameNo;
-
-    int pinCnt;
-
-    bool dirty;
-
-    bool valid;
-
-    bool refbit;
-
-    void Clear()
+//Constructor con tamanio de buffer_pool y puntero al File
+Buffer::Buffer(size_t pool_size, File *file) : pool_size_(pool_size), file_(file)
+{
+    buffer_pool = std::vector<Frame>(pool_size);
+    //Inicializamos el replacer con el algoritmo de remplazamiento elegido 
+    replacer_ = new Clock(pool_size);
+    for (int32_t i = 0; i < pool_size; i++)
     {
-        pinCnt = 0;
-        file = NULL;
-        pageNo = Page::INVALID_NUMBER;
-        dirty = false;
-        refbit = false;
-        valid = false;
-    };
-
-    void Set(File *filePtr, PageId pageNum)
-    {
-        file = filePtr;
-        pageNo = pageNum;
-        pinCnt = 1;
-        dirty = false;
-        valid = true;
-        refbit = true;
+        //Inicializamos las listas en 0
+        free_list_.emplace_back(static_cast<int>(i));
+        buffer_pool[i].dirty_bit = 0;
+        buffer_pool[i].pin_count = 0;
     }
+}
 
-    void Print()
+//Obtener pagina solicitada por id
+Page* Buffer::FetchPageImpl(int page_id) 
+{
+    // 1. Buscar en la page_table la página solicitada (P).
+    // 1.1 Si P existe, la fija y la devuelve inmediatamente.
+    // 1.2 Si P no existe, encuentra una página de reemplazo (R) de la lista libre o del replacer.
+    // 2. Si R está dirty, escribirla de nuevo en el disco.
+    // 3. Eliminar R de la page_table e insertar P.
+    // 4. Actualizar los metadatos de P, leer el contenido de la página desde el disco, y luego devolver un puntero a P.
+
+    //Si la pagina se encuentra ya en el buffer.
+    if(page_table_.find(page_id)!= page_table_.end())
     {
-        if (file)
+        //Actualiza metadata de la pagina en el Buffer
+        int target = page_table_[page_id];      // devuelve frame_id
+        replacer_->Pin(target);
+        buffer_pool[target].pin_count++;
+        //Retorna el puntero la pagina encontrada
+        return buffer_pool[target].page;
+    }
+    //En caso la pagina solicitada, NO se encuentre en el buffer
+    else
+    {
+        //Seteamos un entero que reciba el indice a utilizar
+        int target;
+        if(!free_list_.empty())
         {
-            std::cout << "file:" << file->filename() << " ";
-            std::cout << "pageNo:" << pageNo << " ";
+        //Si existen espacios disponibles
+            target = free_list_.front();
+            free_list_.pop_front();
+            //Target se setea como el espacio encontrado
+            replacer_->Unpin(target);
+            //Actualizamos los contenidos de la page_table y el buffer_pool
+            page_table_.insert({page_id, target});
+            buffer_pool[target].pin_count++;
+            buffer_pool[target].page = file_->readPage(page_id);
+            buffer_pool[target].dirty_bit = 0;
+            //Retornamos el puntero a la pagina requerida 
+            return buffer_pool[target].page;
         }
         else
-            std::cout << "file:NULL ";
-
-        std::cout << "valid:" << valid << " ";
-        std::cout << "pinCnt:" << pinCnt << " ";
-        std::cout << "dirty:" << dirty << " ";
-        std::cout << "refbit:" << refbit << "\n";
-    }
-
-    BufDesc()
-    {
-        Clear();
-    }
-};
-
-struct BufStats
-{
-
-    int accesses;
-
-    int diskreads;
-
-    int diskwrites;
-
-    void clear()
-    {
-        accesses = diskreads = diskwrites = 0;
-    }
-
-    BufStats()
-    {
-        clear();
-    }
-};
-
-class BufMgr
-{
-private:
-    FrameId clockHand;
-
-    std::uint32_t numBufs;
-
-    BufHashTbl *hashTable;
-
-    BufDesc *bufDescTable;
-
-    BufStats bufStats;
-
-    void advanceClock();
-
-    void allocBuf(FrameId &frame);
-
-public:
-    Page *bufPool;
-
-    BufMgr(std::uint32_t bufs);
-
-    ~BufMgr();
-
-    void readPage(File *file, const PageId PageNo, Page *&page);
-
-    void unPinPage(File *file, const PageId PageNo, const bool dirty);
-
-    void allocPage(File *file, PageId &PageNo, Page *&page);
-
-    void flushFile(const File *file);
-
-    void disposePage(File *file, const PageId PageNo);
-
-    void printSelf();
-
-    BufStats &getBufStats()
-    {
-        return bufStats;
-    }
-    void clearBufStats()
-    {
-        bufStats.clear();
-    }
-};
-
-BufMgr::BufMgr(std::uint32_t bufs)
-    : numBufs(bufs)
-{
-    bufDescTable = new BufDesc[bufs];
-
-    for (FrameId i = 0; i < bufs; i++)
-    {
-        bufDescTable[i].frameNo = i;
-        bufDescTable[i].valid = false;
-    }
-
-    bufPool = new Page[bufs];
-
-    int htsize = ((((int)(bufs * 1.2)) * 2) / 2) + 1;
-    hashTable = new BufHashTbl(htsize); // asignar la tabla hash del buffer
-
-    clockHand = bufs - 1;
-}
-
-BufMgr::~BufMgr()
-{
-
-    for (uint32_t i = 0; i < numBufs; i++)
-    {
-        BufDesc buf = bufDescTable[i];
-        if (buf.dirty)
-        {
-            flushFile(buf.file);
-        }
-    }
-
-    delete[] bufPool;
-    delete[] bufDescTable;
-    delete hashTable;
-}
-
-// Avanzar el reloj a la siguiente trama del buffer pool
-void BufMgr::advanceClock()
-{
-    clockHand++;
-    clockHand = clockHand % numBufs;
-}
-
-// Allocates a free frame using the clock algorithm; if necessary, writing a dirty page back
-// to disk. Throws BufferExceededException if all buffer frames are pinned.
-void BufMgr::allocBuf(FrameId &frame)
-{
-    // Comprobar si se ha encontrado la página
-    bool frameNF = true;
-    // Almacenar el frame que se está comprobando
-    BufDesc buf;
-    // Contador de bucle. Asegura que el bucle while no llegue al infinito
-    uint32_t count = 0;
-
-    while (frameNF && count <= numBufs)
-    {
-        // Incrementa el reloj
-        advanceClock();
-        // Incrementa el contador
-        count++;
-        // Obtenga el frame actual que se va a probar
-        buf = bufDescTable[clockHand];
-
-        if (buf.valid == false)
-        {
-            frameNF = false;
-        }
-        else if (buf.refbit == true)
-        {
-            // debemos cambiar directamente el valor del refbit
-            bufDescTable[clockHand].refbit = false;
-        }
-        else if (buf.pinCnt == 0)
-        {
-            frameNF = false;
-            hashTable->remove(buf.file, buf.pageNo);
-            if (buf.dirty)
+        {//Sino, utilizamos el algoritmo de remplazamiento
+            if(!replacer_->Victim(&target)) 
             {
-                bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
-                bufDescTable[clockHand].dirty = false;
+                //std::cout << "NULL\n";
+                return nullptr;
             }
-            bufDescTable[clockHand].Clear();
+            int target_page_id = buffer_pool[target].page->page_number(); // page_id de la pagina que se eliminara del buffer
+            std::cout << "target_page_id: " << target_page_id << "\n"; 
+            
+            if(buffer_pool[target].dirty_bit)
+            {
+                if(!FlushPageImpl(target_page_id)) 
+                {
+                    return nullptr;
+                }
+            }
+            //replacer_->Pin(target);
+            buffer_pool[target].pin_count++;
+            //Actualizamos los contenidos de la page_table y el buffer_pool
+            page_table_.erase(target_page_id);          // borra la pagina del buffer
+            page_table_.insert({page_id, target});
+            buffer_pool[target].page = file_->readPage(page_id);    // lee nueva pagina del file
+            buffer_pool[target].dirty_bit = 0;
+            //Retornamos el puntero a la pagina requerida 
+            return buffer_pool[target].page;
         }
+        
     }
-
-    if (frameNF)
-    {
-        std::cerr << "Se ha superado la capacidad del buffer.\n";
-    }
-
-    frame = buf.frameNo;
+    return nullptr;
 }
 
-// Lee una página específica. Si la página está en el buffer, la leerá desde allí. En caso contrario
-// la página se cargará en el pool de buffers.
-void BufMgr::readPage(File *file, const PageId pageNo, Page *&page)
+bool Buffer::UnpinPageImpl(int page_id, bool is_dirty)
 {
-    FrameId fno;
-    try
+    if(page_table_.find(page_id) == page_table_.end())
     {
-        // buscar la página en la tabla de hash
-        hashTable->lookup(file, pageNo, fno);
-        // si se encuentra, incrementa la cuenta de pines, pone el refbit a 0 y devuelve la página
-        bufDescTable[fno].pinCnt++;
-        bufDescTable[fno].refbit = true;
-        page = &bufPool[fno];
+        return true;
     }
-    catch (std::tuple<std::string,PageId> a)
+    int target = page_table_[page_id];
+    if(buffer_pool[target].pin_count <= 0)
     {
-        // Si la página no está en la tabla de hash, significa que hubo una pérdida de búfer, por lo que necesitamos leer del disco y asignar un marco de búfer para colocar la página
-        allocBuf(fno);
-        bufPool[fno] = file->readPage(pageNo);
-        bufDescTable[fno].Set(file, pageNo);
-        page = &bufPool[fno];
-        hashTable->insert(file, pageNo, fno);
+        return false;
+    }
+    else 
+    {
+        buffer_pool[target].pin_count--;
+        buffer_pool[target].dirty_bit |= is_dirty;
+        if(buffer_pool[target].pin_count == 0)
+        {
+            replacer_->Unpin(target);
+        }
+        return true;
     }
 }
 
-// Disminuye el pinCnt de la frame que contiene (file, PageNo) y, si dirty == true, pone
-// el dirty bit. Lanza PAGENOTPINNED si la cuenta de pines ya es 0. No hace nada si
-// la página no se encuentra en la búsqueda de la tabla hash.
-void BufMgr::unPinPage(File *file, const PageId pageNo, const bool dirty)
+bool Buffer::FlushPageImpl(int page_id) 
 {
-    FrameId fno;
-    // buscar hashtable
-    hashTable->lookup(file, pageNo, fno);
-    // si esta página ya está desanclada, lanza una excepción
-    if (bufDescTable[fno].pinCnt == 0)
+    if(page_id == -1)
+        return false;
+    if(page_table_.find(page_id) == page_table_.end())
+        return false;
+    else 
     {
-        std::cerr << "Esta página no está anclada. file:  " << "pageNotPinned" << "page: " << bufDescTable[fno].pageNo << "frame: " << fno;
-        return;
+        int target = page_table_[page_id];
+        if(!buffer_pool[target].dirty_bit)
+            return true;
+        file_->write_page(page_id, buffer_pool[target].page);
+        buffer_pool[target].dirty_bit = 0;
+        return true;
     }
-        //throw PageNotPinnedException("pageNotPinned", bufDescTable[fno].pageNo, fno);
+}
+
+Page *Buffer::NewPageImpl(int *page_id) 
+{
+    // 1. Si todas las páginas del bufferpool están fijadas, devuelve nullptr.
+    // 2. Escoge una página víctima P de la lista libre o del replacer. Siempre se elige primero de la lista libre.
+    // 3. Actualizar los metadatos de P, poner a cero la memoria y añadir P a la page_table.
+    // 4. Establecer el parámetro de salida del ID de la página. Devuelve un puntero a P.
+    int free_frame = free_list_.front();
+    if(!free_list_.empty())
+    {
+        free_list_.pop_front();
+        *page_id = file_->allocatePage();
+        page_table_[*page_id] = free_frame;
+        replacer_->Pin(free_frame);
+        buffer_pool[free_frame].page        = new Page(*page_id);
+        buffer_pool[free_frame].pin_count   = 1;
+        buffer_pool[free_frame].dirty_bit   = false;
+
+        //std::cout << "Numero asig: " << *page_id << "\n";
+        return buffer_pool[free_frame].page;
+    }
     else
-        bufDescTable[fno].pinCnt--; // Disminuir la cantidad de pines
-    if (dirty)
-        bufDescTable[fno].dirty = true; // Establece dirty
+    {
+        int victim;
+        if(!replacer_->Victim(&victim)) 
+            return nullptr;
+
+        if(buffer_pool[victim].dirty_bit)
+            if(!FlushPageImpl(buffer_pool[victim].page->page_number()))
+                return nullptr;
+
+        int victim_page_id = buffer_pool[victim].page->page_number();
+        page_table_.erase(victim_page_id);
+        *page_id = file_->allocatePage();
+        page_table_[*page_id] = victim;
+        replacer_->Pin(victim);
+        buffer_pool[free_frame].page = new Page(*page_id);
+        buffer_pool[victim].pin_count = 1;
+        buffer_pool[victim].dirty_bit = false;
+
+        return buffer_pool[victim].page;
+    }
 }
 
-void BufMgr::flushFile(const File *file)
-{
-    for (uint32_t i = 0; i < numBufs; i++)
+bool Buffer::DeletePageImpl(int page_id) {
+    // 1. Buscar en la page_table la página solicitada (P).
+    // 1. Si P no existe, devuelve true.
+    // 2. Si P existe, pero tiene un número de pines distinto de cero, devuelve false. 
+    //    Alguien está usando la página.
+    // 3. En caso contrario, P puede ser eliminado. 
+    //    Elimina P de la page_table, restablece sus metadatos y la devuelve a la lista de libres.
+    if(page_table_.find(page_id) == page_table_.end())
+        return true;
+    else
     {
-        if (bufDescTable[i].file == file)
-        {
-            if (!bufDescTable[i].valid)
-            {
-                // Si el frame está no es valido, lanza BadBufferException
-
-                std::cerr << "Este buffer está mal: " << i;
-                return;
-                //throw BadBufferException(i, bufDescTable[i].dirty, bufDescTable[i].valid, bufDescTable[i].refbit);
-            }
-            if (bufDescTable[i].pinCnt != 0)
-            {
-                // Si el frame está fijado, lanza PagePinnedException
-                std::cerr << "Esta pagina ya está anclada. file:  " << "pagePinned" << "page: " << bufDescTable[i].pageNo << "frame: " << i;
-                return;
-                //throw PagePinnedException("pagePinned", bufDescTable[i].pageNo, i);
-            }
-            if (bufDescTable[i].dirty)
-            {
-                // Si la trama está corrupta, la escribe en el disco, y luego pone el valor de dirty en false
-                bufDescTable[i].file->writePage(bufPool[i]);
-                bufDescTable[i].dirty = false;
-            }
-            // Eliminar la página de la tabla de hash
-            hashTable->remove(file, bufDescTable[i].pageNo);
-            // Limpiar buffer frame
-            bufDescTable[i].Clear();
+        int target = page_table_[page_id];
+        if(buffer_pool[target].pin_count != 0) 
+            return false;
+        else
+        { 
+            page_table_.erase(page_id);
+            buffer_pool[target].page = nullptr;
+            buffer_pool[target].dirty_bit = false;
+            free_list_.push_back(target);
+            return true;
         }
     }
+    return false;
 }
 
-// Este método devolverá una página recién asignada.
-void BufMgr::allocPage(File *file, PageId &pageNo, Page *&page)
+void Buffer::FlushAllPagesImpl() 
 {
-    FrameId frameNum;
-
-    Page p1 = file->allocatePage();
-    allocBuf(frameNum);
-    bufPool[frameNum] = p1;
-    hashTable->insert(file, p1.page_number(), frameNum);
-    bufDescTable[frameNum].Set(file, p1.page_number());
-    pageNo = p1.page_number();
-    page = &bufPool[frameNum];
+    for(size_t i = 0; i < pool_size_; ++i)
+        if(buffer_pool[i].dirty_bit)
+            if(!FlushPageImpl(buffer_pool[i].page->page_number())){}
 }
 
-// Este método elimina una página concreta del archivo.
-void BufMgr::disposePage(File *file, const PageId PageNo)
-{
-    try
-    {
-        FrameId frameNum;
-        hashTable->lookup(file, PageNo, frameNum);
-        bufDescTable[frameNum].Clear();
-        hashTable->remove(file, PageNo);
-        file->deletePage(PageNo);
-    }
-    catch (std::tuple<std::string,PageId> a)
-    {
-        // Hash not found
-    }
-}
 
-void BufMgr::printSelf(void)
-{
-    BufDesc *tmpbuf;
-    int validFrames = 0;
-
-    for (std::uint32_t i = 0; i < numBufs; i++)
-    {
-        tmpbuf = &(bufDescTable[i]);
-        std::cout << "FrameNo:" << i << " ";
-        tmpbuf->Print();
-
-        if (tmpbuf->valid == true)
-            validFrames++;
-    }
-
-    std::cout << "Número total de Frames Válidos:" << validFrames << "\n";
-}
+Buffer::~Buffer(){
+    delete replacer_;
 }
