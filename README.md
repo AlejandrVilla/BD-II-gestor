@@ -1,2 +1,2 @@
-# BD II gestor
+# SGDB
  
