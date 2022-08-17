@@ -2,37 +2,34 @@
 #include <cstdlib>
 #include <stdlib.h>
 #include <fstream>
-#include "arbol.h"
+#include "Btree.h"
 using namespace std;
 
 int main(){
-    string mensaje = "mensaje";
+    string cadena;
     int orden = 3;
 
+    cout << "\nTests insertions en 'casos' \n";
+    cout << "Tests eliminations en 'casosDeBorrado'\n" << endl;
+    Btree A(orden);
 
-    cout << "\nLos tests de cargar valores se encuentran en 'casos' \n \
-        Los tests para eliminar valores se encuentran en 'casosDeBorrado'\n" << endl;
+    cout << "\n\nIngrese el nombre del archivo de la carpeta 'casos':  ";
+    cin >> cadena;
 
-    Arbol A(orden);
+    A.readKeys(cadena);
 
-    cout << "\n\nIngrese el nombre del archivo con valores para\nagregar al arbol, en la carpeta 'casos':  ";
-    cin >> mensaje;
+    cout << "\nBtree generado por archivo\n";
+    A.draw();
 
-    A.lecturaLlaves(mensaje);
+    cout << "\n\n Para borrar valores del Btree, digite ...\n [1]Si\n [2]NO\n\nOpcion:  ";
+    cin >> cadena;
 
-    cout << "\nArbol generado por archivo\n";
-    A.pintar();
-
-    cout << "\n\nDeseas borrar valores del arbol desde un archivo?\n [1]Si\n [Otra tecla]NO\n \nOpcion:  ";
-
-    cin >> mensaje;
-    if(mensaje == "1"){
-        cout << "\n\nIngrese el nombre del archivo con valores para\nborrar del arbol, en la carpeta casosDeBorrados:  ";
-        cin >> mensaje;
-
-        A.borradoLlaves(mensaje);
-        cout << "\nArbol con valores borrados\n";
-        A.pintar();
+    if(cadena == "1"){
+        cout << "\n\nIngrese el nombre del archivo en la carpeta casosDeBorrados:  ";
+        cin >> cadena;
+        A.eraseKeys(cadena);
+        cout << "\nBtree con valores borrados\n";
+        A.draw();
     }
 
 

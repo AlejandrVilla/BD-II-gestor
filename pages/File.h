@@ -6,85 +6,86 @@
 
 #include "../types.h"
 
-namespace siprec
+namespace DBMS
 {
     class FileIterator;
     struct FileHeader
     {
-        PageId num_pages;
-        PageId first_used_page;
-        PageId num_free_pages;
-        PageId first_free_page;
+        PaginaId cnt_pages;
+        PaginaId used_first;
+        PaginaId num_free_pages;
+        PaginaId free_first;
         bool operator==(const FileHeader &rhs) const
         {
             return (
-                num_pages == rhs.num_pages &&
-                first_used_page == rhs.first_used_page &&
-                first_free_page == rhs.first_free_page &&
+                cnt_pages == rhs.cnt_pages &&
+                used_first == rhs.used_first &&
+                free_first == rhs.free_first &&
                 num_free_pages == rhs.num_free_pages);
         }
     };
 
     class File
     {
-    public:
-        static File create(const std::string &filename_);
-        static File open(const std::string &filename);
-        static void remove(const std::string &filename);
-        static bool isOpen(const std::string &filename);
-        static bool exists(const std::string &filename);
-        File(const File &other);
-        File &operator=(const File &rhs);
-        ~File();
-        Page allocatePage();
-        Page readPage(const PageId page_number) const;
-        void writePage(const Page &new_page);
-        void deletePage(const PageId page_number);
-        const std::string &filename() const { return filename_; }
-        FileIterator begin();
-        FileIterator end();
-
     private:
-        static std::streampos pagePosition(const PageId page_number)
-        {
-            return sizeof(FileHeader) + (page_number - 1) * Page::SIZE;
-        }
-        File(const std::string &name, const bool create_new);
-        void openIfNeeded(const bool create_new);
-        void close();
-        Page readPage(const PageId page_number, const bool allow_free) const;
-        void writePage(const PageId page_number, const Page &new_page);
-        void writePage(const PageId page_number, const PageHeader &header, const Page &new_page);
-        FileHeader readHeader() const;
-        void writeHeader(const FileHeader &header);
-        PageHeader readPageHeader(const PageId page_number) const;
         typedef std::map<std::string, std::shared_ptr<std::fstream>> StreamMap;
         typedef std::map<std::string, int> CountMap;
-
         static StreamMap open_streams_;
         static CountMap open_counts_;
         std::string filename_;
         std::shared_ptr<std::fstream> stream_;
         friend class FileIterator;
+
+        static std::streampos pagePosition(const PaginaId num_pagina)
+        {
+            return sizeof(FileHeader) + (num_pagina - 1) * Pagina::SIZE;
+        }
+        File(const std::string &name, const bool create_new);
+        void openIfNeeded(const bool create_new);
+        void close();
+        Pagina readPage(const PaginaId num_pagina, const bool allow_free) const;
+        void writePage(const PaginaId num_pagina, const Pagina &new_page);
+        void writePage(const PaginaId num_pagina, const PaginaHeader &header, const Pagina &new_page);
+        FileHeader readHeader() const;
+        void writeHeader(const FileHeader &header);
+        PaginaHeader readPaginaHeader(const PaginaId num_pagina) const;
+
+    public:
+        static File create(const std::string &filename_);
+        static File open(const std::string &filename_);
+        static void remove(const std::string &filename_);
+        static bool isOpen(const std::string &filename_);
+        static bool exists(const std::string &filename_);
+        File(const File &other);
+        File &operator=(const File &rhs);
+        ~File();
+        Pagina allocatePage();
+        Pagina readPage(const PaginaId num_pagina) const;
+        void writePage(const Pagina &new_page);
+        void deletePage(const PaginaId num_pagina);
+        const std::string &filename() const { return filename_; }
+        FileIterator begin();
+        FileIterator end();
+
     };
 
     class FileIterator
     {
     private:
         File *file_;
-        PageId current_page_number_;
+        PaginaId num_pagina_actual_;
 
     public:
         FileIterator()
             : file_(NULL),
-              current_page_number_(Page::INVALID_NUMBER)
+              num_pagina_actual_(Pagina::INVALID_NUMBER)
         {
         }
 
         FileIterator(const FileIterator &it)
         {
             file_ = it.file_;
-            current_page_number_ = it.current_page_number_;
+            num_pagina_actual_ = it.num_pagina_actual_;
         }
 
         FileIterator(File *file)
@@ -92,12 +93,12 @@ namespace siprec
         {
             assert(file_ != NULL);
             const FileHeader &header = file_->readHeader();
-            current_page_number_ = header.first_used_page;
+            num_pagina_actual_ = header.used_first;
         }
 
-        FileIterator(File *file, PageId page_number)
+        FileIterator(File *file, PaginaId num_pagina)
             : file_(file),
-              current_page_number_(page_number)
+              num_pagina_actual_(num_pagina)
         {
         }
         FileIterator &operator++();
@@ -108,14 +109,14 @@ namespace siprec
 
         bool operator!=(const FileIterator &rhs) const;
 
-        Page operator*() const;
+        Pagina operator*() const;
     };
 
     FileIterator &FileIterator::operator++()
     {
         assert(file_ != NULL);
-        const PageHeader &header = file_->readPageHeader(current_page_number_);
-        current_page_number_ = header.next_page_number;
+        const PaginaHeader &header = file_->readPaginaHeader(num_pagina_actual_);
+        num_pagina_actual_ = header.sig_num_pagina;
 
         return *this;
     }
@@ -125,8 +126,8 @@ namespace siprec
         FileIterator tmp = *this;
 
         assert(file_ != NULL);
-        const PageHeader &header = file_->readPageHeader(current_page_number_);
-        current_page_number_ = header.next_page_number;
+        const PaginaHeader &header = file_->readPaginaHeader(num_pagina_actual_);
+        num_pagina_actual_ = header.sig_num_pagina;
 
         return tmp;
     }
@@ -134,18 +135,18 @@ namespace siprec
     bool FileIterator::operator==(const FileIterator &rhs) const
     {
         return file_->filename() == rhs.file_->filename() &&
-               current_page_number_ == rhs.current_page_number_;
+               num_pagina_actual_ == rhs.num_pagina_actual_;
     }
 
     bool FileIterator::operator!=(const FileIterator &rhs) const
     {
         return (file_->filename() != rhs.file_->filename()) ||
-               (current_page_number_ != rhs.current_page_number_);
+               (num_pagina_actual_ != rhs.num_pagina_actual_);
     }
 
-    Page FileIterator::operator*() const
+    Pagina FileIterator::operator*() const
     {
-        return file_->readPage(current_page_number_);
+        return file_->readPage(num_pagina_actual_);
     }
 
     File::StreamMap File::open_streams_;
@@ -217,173 +218,170 @@ namespace siprec
         close();
     }
 
-    Page File::allocatePage()
+    Pagina File::allocatePage()
     {
         FileHeader header = readHeader();
-        Page new_page;
-        Page existing_page;
+        Pagina nueva_pagina;
+        Pagina pagina_existente;
         if (header.num_free_pages > 0)
         {
-            new_page = readPage(header.first_free_page, true /* allow_free */);
-            new_page.set_page_number(header.first_free_page);
-            header.first_free_page = new_page.next_page_number();
+            nueva_pagina = readPage(header.free_first, true );
+            nueva_pagina.set_num_pagina(header.free_first);
+            header.free_first = nueva_pagina.sig_num_pagina();
             --header.num_free_pages;
 
-            if (header.first_used_page == Page::INVALID_NUMBER ||
-                header.first_used_page > new_page.page_number())
+            if (header.used_first == Pagina::INVALID_NUMBER || header.used_first > nueva_pagina.num_pagina())
             {
                 // O no tiene páginas usadas o el encabezado de la lista usada es una página posterior
                 // que el que acabamos de asignar, así que se agrega la nueva página al encabezado.
-                if (header.first_used_page > new_page.page_number())
+                if (header.used_first > nueva_pagina.num_pagina())
                 {
-                    new_page.set_next_page_number(header.first_used_page);
+                    nueva_pagina.set_sig_num_pagina(header.used_first);
                 }
-                header.first_used_page = new_page.page_number();
+                header.used_first = nueva_pagina.num_pagina();
             }
             else
             {
                  // La nueva página se reutiliza desde algún lugar después del principio, por lo que debemos
                 // encontrar en qué parte de la lista de usados esta para ​​insertarlo.
-                PageId next_page_number = Page::INVALID_NUMBER;
+                PaginaId sig_num_pagina = Pagina::INVALID_NUMBER;
                 for (FileIterator iter = begin(); iter != end(); ++iter)
                 {
-                    next_page_number = (*iter).next_page_number();
-                    if (next_page_number > new_page.page_number() ||
-                        next_page_number == Page::INVALID_NUMBER)
+                    sig_num_pagina = (*iter).sig_num_pagina();
+                    if (sig_num_pagina > nueva_pagina.num_pagina() || sig_num_pagina == Pagina::INVALID_NUMBER)
                     {
-                        existing_page = *iter;
+                        pagina_existente = *iter;
                         break;
                     }
                 }
-                existing_page.set_next_page_number(new_page.page_number());
-                new_page.set_next_page_number(next_page_number);
+                pagina_existente.set_sig_num_pagina(nueva_pagina.num_pagina());
+                nueva_pagina.set_sig_num_pagina(sig_num_pagina);
             }
 
-            assert((header.num_free_pages == 0) ==
-                   (header.first_free_page == Page::INVALID_NUMBER));
+            assert((header.num_free_pages == 0) == (header.free_first == Pagina::INVALID_NUMBER));
         }
         else
         {
-            new_page.set_page_number(header.num_pages);
-            if (header.first_used_page == Page::INVALID_NUMBER)
+            nueva_pagina.set_num_pagina(header.cnt_pages);
+            if (header.used_first == Pagina::INVALID_NUMBER)
             {
-                header.first_used_page = new_page.page_number();
+                header.used_first = nueva_pagina.num_pagina();
             }
             else
             {
 
                 for (FileIterator iter = begin(); iter != end(); ++iter)
                 {
-                    if ((*iter).next_page_number() == Page::INVALID_NUMBER)
+                    if ((*iter).sig_num_pagina() == Pagina::INVALID_NUMBER)
                     {
-                        existing_page = *iter;
+                        pagina_existente = *iter;
                         break;
                     }
                 }
-                assert(existing_page.isUsed());
-                existing_page.set_next_page_number(new_page.page_number());
+                assert(pagina_existente.isUsed());
+                pagina_existente.set_sig_num_pagina(nueva_pagina.num_pagina());
             }
-            ++header.num_pages;
+            ++header.cnt_pages;
         }
-        writePage(new_page.page_number(), new_page);
-        if (existing_page.page_number() != Page::INVALID_NUMBER)
+        writePage(nueva_pagina.num_pagina(), nueva_pagina);
+        if (pagina_existente.num_pagina() != Pagina::INVALID_NUMBER)
         {
-            writePage(existing_page.page_number(), existing_page);
+            writePage(pagina_existente.num_pagina(), pagina_existente);
         }
         writeHeader(header);
 
-        return new_page;
+        return nueva_pagina;
     }
 
-    Page File::readPage(const PageId page_number) const
+    Pagina File::readPage(const PaginaId num_pagina) const
     {
         FileHeader header = readHeader();
-        if (page_number >= header.num_pages)
+        if (num_pagina >= header.cnt_pages)
         {
             std::cerr << "Peticion dirigida a pagina invalida.\n";
-            std::cerr << "Pagina: " << page_number << "\n";
+            std::cerr << "Pagina: " << num_pagina << "\n";
             std::cerr << "File: " << filename_ << "\n";
         }
-        return readPage(page_number, false);
+        return readPage(num_pagina, false);
     }
 
-    Page File::readPage(const PageId page_number, const bool allow_free) const
+    Pagina File::readPage(const PaginaId num_pagina, const bool allow_free) const
     {
-        Page page;
-        stream_->seekg(pagePosition(page_number), std::ios::beg);
-        stream_->read(reinterpret_cast<char *>(&page.header_), sizeof(page.header_));
-        stream_->read(reinterpret_cast<char *>(&page.data_[0]), Page::DATA_SIZE);
-        if (!allow_free && !page.isUsed())
+        Pagina pagina;
+        stream_->seekg(pagePosition(num_pagina), std::ios::beg);
+        stream_->read(reinterpret_cast<char *>(&pagina.header_), sizeof(pagina.header_));
+        stream_->read(reinterpret_cast<char *>(&pagina.data_[0]), Pagina::DATA_SIZE);
+        if (!allow_free && !pagina.isUsed())
         {
             std::cerr<< "Peticion dirigida a pagina invalida"
-            << " Pagina: " << page_number
+            << " Pagina: " << num_pagina
             << " File:'" << filename_ << "'";
-            return page;
+            return pagina;
         }
-        return page;
+        return pagina;
     }
 
-    void File::writePage(const Page &new_page)
+    void File::writePage(const Pagina &new_page)
     {
-        PageHeader header = readPageHeader(new_page.page_number());
-        if (header.current_page_number == Page::INVALID_NUMBER)
+        PaginaHeader header = readPaginaHeader(new_page.num_pagina());
+        if (header.num_pagina_actual== Pagina::INVALID_NUMBER)
         {
             std::cerr << "Peticion dirigida a pagina invalida.\n";
-            std::cerr << "Pagina: " << new_page.page_number() << "\n";
+            std::cerr << "Pagina: " << new_page.num_pagina() << "\n";
             std::cerr << "File: " << filename_ << "\n";
         }
-        const PageId next_page_number = header.next_page_number;
+        const PaginaId sig_num_pagina = header.sig_num_pagina;
         header = new_page.header_;
-        header.next_page_number = next_page_number;
-        writePage(new_page.page_number(), header, new_page);
+        header.sig_num_pagina = sig_num_pagina;
+        writePage(new_page.num_pagina(), header, new_page);
     }
 
-    void File::deletePage(const PageId page_number)
+    void File::deletePage(const PaginaId num_pagina)
     {
         FileHeader header = readHeader();
-        Page existing_page = readPage(page_number);
-        Page previous_page;
+        Pagina pagina_existente = readPage(num_pagina);
+        Pagina pagina_previa;
         // Si esta página es el encabezado de la lista usada, actualice el encabezado para que apunte a
         // la página siguiente en la línea.
-        if (page_number == header.first_used_page)
+        if (num_pagina == header.used_first)
         {
-            header.first_used_page = existing_page.next_page_number();
+            header.used_first = pagina_existente.sig_num_pagina();
         }
         else
         {
             // Recorre la lista de usados ​​para que podamos actualizar la página que apunta a esta.
             for (FileIterator iter = begin(); iter != end(); ++iter)
             {
-                previous_page = *iter;
-                if (previous_page.next_page_number() == existing_page.page_number())
+                pagina_previa = *iter;
+                if (pagina_previa.sig_num_pagina() == pagina_existente.num_pagina())
                 {
-                    previous_page.set_next_page_number(existing_page.next_page_number());
+                    pagina_previa.set_sig_num_pagina(pagina_existente.sig_num_pagina());
                     break;
                 }
             }
         }
         // Limpia la página y la agrega al encabezado de la lista libre.
-        existing_page.initialize();
-        existing_page.set_next_page_number(header.first_free_page);
-        header.first_free_page = page_number;
+        pagina_existente.initialize();
+        pagina_existente.set_sig_num_pagina(header.free_first);
+        header.free_first = num_pagina;
         ++header.num_free_pages;
-        if (previous_page.isUsed())
+        if (pagina_previa.isUsed())
         {
-            writePage(previous_page.page_number(), previous_page);
+            writePage(pagina_previa.num_pagina(), pagina_previa);
         }
-        writePage(page_number, existing_page);
+        writePage(num_pagina, pagina_existente);
         writeHeader(header);
     }
 
     FileIterator File::begin()
     {
         const FileHeader &header = readHeader();
-        return FileIterator(this, header.first_used_page);
+        return FileIterator(this, header.used_first);
     }
 
     FileIterator File::end()
     {
-        return FileIterator(this, Page::INVALID_NUMBER);
+        return FileIterator(this, Pagina::INVALID_NUMBER);
     }
 
     File::File(const std::string &name, const bool create_new) : filename_(name)
@@ -393,8 +391,8 @@ namespace siprec
         if (create_new)
         {
            // El archivo comienza con 1 página (el encabezado).
-            FileHeader header = {1 /* num_pages */, 0 /* first_used_page */,
-                                 0 /* num_free_pages */, 0 /* first_free_page */};
+            FileHeader header = {1 /* cnt_pages */, 0 /* used_first */,
+                                 0 /* num_free_pages */, 0 /* free_first */};
             writeHeader(header);
         }
     }
@@ -448,18 +446,18 @@ namespace siprec
         }
     }
 
-    void File::writePage(const PageId page_number, const Page &new_page)
+    void File::writePage(const PaginaId num_pagina, const Pagina &new_page)
     {
-        writePage(page_number, new_page.header_, new_page);
+        writePage(num_pagina, new_page.header_, new_page);
     }
 
-    void File::writePage(const PageId page_number, const PageHeader &header,
-                         const Page &new_page)
+    void File::writePage(const PaginaId num_pagina, const PaginaHeader &header,
+                         const Pagina &new_page)
     {
-        stream_->seekp(pagePosition(page_number), std::ios::beg);
+        stream_->seekp(pagePosition(num_pagina), std::ios::beg);
         stream_->write(reinterpret_cast<const char *>(&header), sizeof(header));
         stream_->write(reinterpret_cast<const char *>(&new_page.data_[0]),
-                       Page::DATA_SIZE);
+                       Pagina::DATA_SIZE);
         stream_->flush();
     }
 
@@ -479,10 +477,10 @@ namespace siprec
         stream_->flush();
     }
 
-    PageHeader File::readPageHeader(PageId page_number) const
+    PaginaHeader File::readPaginaHeader(PaginaId num_pagina) const
     {
-        PageHeader header;
-        stream_->seekg(pagePosition(page_number), std::ios::beg);
+        PaginaHeader header;
+        stream_->seekg(pagePosition(num_pagina), std::ios::beg);
         stream_->read(reinterpret_cast<char *>(&header), sizeof(header));
 
         return header;
