@@ -2,10 +2,12 @@
 #include "page.h"
 
 using namespace std;
+using namespace DB;
 
 int main()
 {
-    vector<string> data = {"este", "es", "un", "conjunto", "de", "registros"};
+    // Probando paginas y registros
+    vector<string> data = {"insertando", "una", "nueva", "pagina", "en", "file"};
     vector<int> slots;
     int k=1;
     Page new_page(k);
@@ -40,7 +42,7 @@ int main()
     cout<<'\n';
 
     rid = new_page.insert_record("nuevo registro");
-    new_page.updated_record(slots[2], "pene");
+    new_page.updated_record(slots[2], "gato");
     cout<<new_page.get_record(slots[2])<<'\n';
 
     for(auto it = new_page.begin() ; it!=new_page.end() ; ++it )
