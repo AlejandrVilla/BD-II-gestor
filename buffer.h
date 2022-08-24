@@ -158,7 +158,7 @@ namespace DB
             replacer_->Pin(free_frame);                 // Marca la pagina como "En Uso"
             buffer_pool[free_frame].page = new Page(*page_id); // Guarda nueva pagina en el frame
             buffer_pool[free_frame].pin_count = 1;                  // Uno en uso
-            buffer_pool[free_frame].dirty_bit = false;              // no esta modificado, esta pito
+            buffer_pool[free_frame].dirty_bit = false;              // no esta modificado
 
             return buffer_pool[free_frame].page;        // Devuelve puntero a la pagina
         }
@@ -180,7 +180,7 @@ namespace DB
             replacer_->Pin(victim);                         // que mrd hace esto
             buffer_pool[victim].page = new Page(*page_id);  // nueva pagina
             buffer_pool[victim].pin_count = 1;              // uno en uso
-            buffer_pool[victim].dirty_bit = false;          // no esta modificado, esta re-pito
+            buffer_pool[victim].dirty_bit = false;          // no esta modificado
 
             return buffer_pool[victim].page;    // devuelve puntero a la pagina
         }
