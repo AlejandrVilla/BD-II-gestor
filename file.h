@@ -80,8 +80,8 @@ namespace DB
 
     void File::open(char separator)
     { 
-        if(!exists(filename))       // if there is no a file called filename and the filename is not changed, 
-        {                           // then a blank file is created
+        if(!exists(filename))       // si el file no existe, 
+        {                           
             std::cout<<"el archivo "<<filename<<" no existe\n";
             return;
         }
@@ -191,7 +191,7 @@ namespace DB
             k++;
         }
         header.num_pages--;
-        header.num_free_pages--; // falta corregir logica
+        header.num_free_pages--; 
     }
 
     bool File::validate_page_id(int page_id)

@@ -177,7 +177,7 @@ namespace DB
             page_table_.erase(victim_page_id);              // borra 
             *page_id = file_->allocatePage();               // nuevo page_id
             page_table_[*page_id] = victim;                 // guarda frame_id
-            replacer_->Pin(victim);                         // que mrd hace esto
+            replacer_->Pin(victim);                         // Marca la pagina como "En Uso"
             buffer_pool[victim].page = new Page(*page_id);  // nueva pagina
             buffer_pool[victim].pin_count = 1;              // uno en uso
             buffer_pool[victim].dirty_bit = false;          // no esta modificado

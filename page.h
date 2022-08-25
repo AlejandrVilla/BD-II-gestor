@@ -87,7 +87,6 @@ namespace DB
 
         const Page& operator=(const Page& page_)
         {
-            // std::cout<<"usando esto = '\n";
             if( &page_ != this )
             {
                 header = page_.header;
